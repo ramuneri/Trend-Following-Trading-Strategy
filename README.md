@@ -1,0 +1,1 @@
+# Trend-Following-Trading-Strategy
