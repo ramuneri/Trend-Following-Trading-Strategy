@@ -53,23 +53,25 @@ initial_capital = 10_000
 position = 0 # shares currently held
 cash = initial_capital
 portfolio_values = []
+commission = 0.001 # TODO 0.1% per trade??
 
 for i in range(1, len(data)):
     price = data["Close"].iloc[i]
 
-    # Buy if signal turns from -1/0 to 1
+    # Buy 
     if data["Signal"].iloc[i] == 1 and data["Signal"].iloc[i - 1] <= 0:
-        position = cash / price
+        position = (cash * (1 - commission)) / price
+        cash = 0
 
     # Sell if signal turns from 1 to -1
     elif data["Signal"].iloc[i] == -1 and data["Signal"].iloc[i - 1] >= 0:
-        cash = position * price
+        cash = position * price * (1 - commission)
         position = 0
 
     portfolio_value = cash + position * price
     portfolio_values.append(portfolio_value)
 
-data = data.iloc[1:]  # remove the first row (since loop starts at 1)???
+data = data.iloc[1:]  # TODO remove the first row (since loop starts at 1)???
 data["Portfolio_Value"] = portfolio_values
 
 fig, ax1 = plt.subplots(figsize=(17, 7))
