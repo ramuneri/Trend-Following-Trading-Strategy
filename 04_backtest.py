@@ -1,8 +1,11 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-data = pd.read_csv("AAPL.csv", parse_dates=["Date"])
-data.set_index("Date", inplace=True)
+data = pd.read_csv("AAPL.csv")
+data["Date"] = pd.to_datetime(data["Date"])
+
+data = data.set_index("Date")
+
 cols = ["Open", "High", "Low", "Close", "Volume"]
 data[cols] = data[cols].apply(pd.to_numeric, errors='coerce')
 
@@ -11,16 +14,21 @@ long_window = 50
 data["SMA_short"] = data["Close"].rolling(window=short_window).mean()
 data["SMA_long"] = data["Close"].rolling(window=long_window).mean()
 
+plt.figure(figsize=(16, 7))
+plt.plot(data.index, data["Close"], label="Close Price", color="blue", alpha=0.6)
+plt.plot(data.index, data["SMA_short"], label=f"SMA {short_window}", color="green")
+plt.plot(data.index, data["SMA_long"], label=f"SMA {long_window}", color="red")
+
+
+
+
+
 data["Signal"] = 0
 data.loc[data["SMA_short"] > data["SMA_long"], "Signal"] = 1
 data.loc[data["SMA_short"] < data["SMA_long"], "Signal"] = -1
 
 data["Position_Change"] = data["Signal"].diff()
 
-plt.figure(figsize=(16, 7))
-plt.plot(data.index, data["Close"], label="Close Price", color="blue", alpha=0.6)
-plt.plot(data.index, data["SMA_short"], label=f"SMA {short_window}", color="green")
-plt.plot(data.index, data["SMA_long"], label=f"SMA {long_window}", color="red")
 
 plt.scatter(
     data.index[data["Position_Change"] == 2],
@@ -42,9 +50,9 @@ plt.scatter(
 
 plt.title("Trend Following: Moving Averages + Signals")
 plt.xlabel("Date")
-plt.ylabel("Price (USD)")
-plt.legend()
+plt.ylabel("Price")
 plt.grid(True)
+plt.legend()
 plt.show()
 
 
