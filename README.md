@@ -24,5 +24,31 @@ The strategy uses **moving average crossovers** to generate buy and sell signals
 
 ## Strategy
 
-IF short_MA > long_MA → we are in an uptrend → buy or hold
-IF short_MA < long_MA → we are in a downtrend → sell or stay out
+##### IF short_MA > long_MA → we are in an uptrend → buy or hold
+
+- The short MA is above the long MA, meaning recent prices are higher than older prices.
+- This signals momentum upward — trend-following strategy assumes the price will continue rising.
+  Actions:
+- If you are not in a position → buy
+- If you are already holding → do nothing (hold)
+
+##### IF short_MA < long_MA → we are in a downtrend → sell or stay out
+
+- The short MA is below the long MA, meaning recent prices are lower than older prices.
+- This signals momentum downward — the trend is falling.
+
+##### Actions:
+
+- If you are holding → sell to avoid losses
+- If you are not holding → stay out
+
+##### Portfolio price changes
+
+🔼 Buy → sharp jump (cash → stock)
+📈 Hold → wiggly line (portfolio follows price)
+🔽 Sell → sharp drop (stock → cash)
+— Flat → straight line (holding cash)
+
+TODO
+
+- fix names with .csv
