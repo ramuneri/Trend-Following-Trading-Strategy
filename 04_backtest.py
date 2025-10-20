@@ -50,25 +50,45 @@ plt.show()
 
 # Simulate
 initial_capital = 10_000
-position = 0 # shares currently held
 cash = initial_capital
 portfolio_values = []
-commission = 0.001 # TODO 0.1% per trade??
+num_of_shares = 0
+take_profit_pct = 0.05
+stop_loss_pct = 0.03
+commission = 0.001
+
+data["Reason"] = ""
 
 for i in range(1, len(data)):
     price = data["Close"].iloc[i]
 
-    # Buy 
-    if data["Signal"].iloc[i] == 1 and data["Signal"].iloc[i - 1] <= 0:
-        position = (cash * (1 - commission)) / price
+    if data["Signal"].iloc[i] == 1 and data["Signal"].iloc[i - 1] <= 0 and cash > 0:
+        num_of_shares = (cash * (1 - commission)) / price
+        buy_price = price
         cash = 0
 
-    # Sell if signal turns from 1 to -1
-    elif data["Signal"].iloc[i] == -1 and data["Signal"].iloc[i - 1] >= 0:
-        cash = position * price * (1 - commission)
-        position = 0
+    elif data["Signal"].iloc[i] == -1 and data["Signal"].iloc[i - 1] >= 0 and num_of_shares > 0:
+        cash = num_of_shares * price * (1 - commission)
+        num_of_shares = 0
+        buy_price = 0
 
-    portfolio_value = cash + position * price
+    # Take Profit / Stop Loss
+    elif num_of_shares > 0:
+        change = (price - buy_price) / buy_price
+        # Take profit
+        if change >= take_profit_pct:
+            cash = num_of_shares * price * (1 - commission)
+            num_of_shares = 0
+            buy_price = 0
+            data.loc[data.index[i], "Reason"] = "Take Profit"
+        # Stop loss
+        elif change <= -stop_loss_pct:
+            cash = num_of_shares * price * (1 - commission)
+            num_of_shares = 0
+            buy_price = 0
+            data.loc[data.index[i], "Reason"] = "Stop Loss"
+
+    portfolio_value = cash + num_of_shares * price
     portfolio_values.append(portfolio_value)
 
 data = data.iloc[1:]  # TODO remove the first row (since loop starts at 1)???
@@ -81,6 +101,14 @@ ax1.set_ylabel("Close Price", color="blue")
 ax1.plot(data.index, data["Close"], label="Close Price", color="blue")
 ax1.plot(data.index, data["SMA_short"], label=f"SMA {short_window}", color="green", linewidth=1)
 ax1.plot(data.index, data["SMA_long"], label=f"SMA {long_window}", color="red", linewidth=1)
+
+# Take Profit and Stop Loss markers
+tp_idx = data.index[data["Reason"] == "Take Profit"]
+sl_idx = data.index[data["Reason"] == "Stop Loss"]
+
+ax1.scatter(tp_idx, data["Close"].loc[tp_idx], color="lime", marker="*", s=150, label="Take Profit")
+ax1.scatter(sl_idx, data["Close"].loc[sl_idx], color="black", marker="x", s=100, label="Stop Loss")
+
 
 ax1.scatter(
     data.index[data["Position_Change"] == 2],
@@ -104,7 +132,7 @@ ax1.grid(True)
 
 ax2 = ax1.twinx()
 ax2.set_ylabel("Portfolio Value", color="purple")
-ax2.plot(data.index, data["Portfolio_Value"], label="Portfolio Value", color="purple", linewidth=3)
+ax2.plot(data.index, data["Portfolio_Value"], label="Portfolio Value", color="purple", linewidth=1)
 ax2.tick_params(axis='y', labelcolor="purple")
 
 fig.suptitle("Trend Following Strategy")
