@@ -1,5 +1,4 @@
 import yfinance as yf
-import pandas as pd
 
 ticker = "AAPL"
 start="2023-01-01"
