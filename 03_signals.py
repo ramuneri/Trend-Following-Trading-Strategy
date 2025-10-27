@@ -1,11 +1,13 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-data = pd.read_csv("AAPL.csv", parse_dates=["Date"])
-data.set_index("Date", inplace=True)
+data = pd.read_csv("AAPL.csv")
+data["Date"] = pd.to_datetime(data["Date"])
+data = data.set_index("Date")
 
 cols = ["Open", "High", "Low", "Close", "Volume"]
 data[cols] = data[cols].apply(pd.to_numeric, errors='coerce')
+
 
 short_window = 20
 long_window = 50
@@ -13,13 +15,10 @@ long_window = 50
 data["SMA_short"] = data["Close"].rolling(window=short_window).mean()
 data["SMA_long"] = data["Close"].rolling(window=long_window).mean()
 
-# Generate buy/sell signals
-# 0 = no position, 1 = buy, -1 = sell
 data["Signal"] = 0
 data.loc[data["SMA_short"] > data["SMA_long"], "Signal"] = 1
 data.loc[data["SMA_short"] < data["SMA_long"], "Signal"] = -1
 
-# Crossover points (where signal changes)
 data["Position_Change"] = data["Signal"].diff()
 
 plt.figure(figsize=(16, 7))
@@ -45,12 +44,10 @@ plt.scatter(
     s=100,
 )
 
-plt.title("Trend Following Signals (MA Crossover)")
+plt.title("Trend Following Signals")
 plt.xlabel("Date")
-plt.ylabel("Price (USD)")
+plt.ylabel("Price")
 plt.legend()
 plt.grid(True)
+plt.tight_layout()
 plt.show()
-
-# Optional: print a few signals
-print(data[["Close", "SMA_short", "SMA_long", "Signal", "Position_Change"]].tail(10))

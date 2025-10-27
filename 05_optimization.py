@@ -16,12 +16,13 @@ def run_strategy(data, short_window, long_window, take_profit_pct=0.05, stop_los
     df["Signal"] = np.where(df["SMA_short"] > df["SMA_long"], 1, -1)
 
     cash = 10_000
-    num_shares = 0
     portfolio_values = []
+    num_shares = 0
     buy_price = 0
 
     for i in range(1, len(df)):
         price = df["Close"].iloc[i]
+
         signal_now = df["Signal"].iloc[i]
         signal_prev = df["Signal"].iloc[i - 1]
 

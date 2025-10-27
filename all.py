@@ -66,36 +66,52 @@ for i in range(1, len(data)):
 data = data.iloc[1:]
 data["Portfolio_Value"] = portfolio_values
 
-tp_idx = data.index[data["Reason"] == "Take Profit"]
-sl_idx = data.index[data["Reason"] == "Stop Loss"]
-tp_prices = data["Close"].loc[tp_idx]
-sl_prices = data["Close"].loc[sl_idx]
-
-
 fig, ax1 = plt.subplots(figsize=(16, 7))
 
+ax1.set_xlabel("Date")
+ax1.set_ylabel("Close Price")
 ax1.plot(data.index, data["Close"], label="Close Price", color="blue")
 ax1.plot(data.index, data["SMA_short"], label=f"SMA {short_window}", color="green")
 ax1.plot(data.index, data["SMA_long"], label=f"SMA {long_window}", color="orange")
 
-ax1.scatter(tp_idx, tp_prices, color="green", marker="*", s=150, label="Take Profit")
-ax1.scatter(sl_idx, sl_prices, color="red", marker="x", s=100, label="Stop Loss")
+# Take Profit and Stop Loss markers
+tp_idx = data.index[data["Reason"] == "Take Profit"]
+sl_idx = data.index[data["Reason"] == "Stop Loss"]
 
-ax1.set_xlabel("Date")
-ax1.set_ylabel("Close Price")
+ax1.scatter(tp_idx, data["Close"].loc[tp_idx], color="green", marker="*", s=150, label="Take Profit")
+ax1.scatter(sl_idx, data["Close"].loc[sl_idx], color="red", marker="x", s=100, label="Stop Loss")
+
+ax1.scatter(
+    data.index[data["Position_Change"] == 2],
+    data["Close"][data["Position_Change"] == 2],
+    label="Buy Signal",
+    marker="^",
+    color="green",
+    s=100,
+)
+ax1.scatter(
+    data.index[data["Position_Change"] == -2],
+    data["Close"][data["Position_Change"] == -2],
+    label="Sell Signal",
+    marker="v",
+    color="red",
+    s=100,
+)
+
+ax1.tick_params(axis='y')
 ax1.grid(True)
 
 ax2 = ax1.twinx()
-ax2.plot(data.index, data["Portfolio_Value"], color="black", linewidth=2, label="Portfolio Value")
 ax2.set_ylabel("Portfolio Value")
-
-ax1.legend()
-ax2.legend()
+ax2.plot(data.index, data["Portfolio_Value"], label="Portfolio Value", color="purple", linewidth=1)
+ax2.tick_params(axis='y')
 
 fig.suptitle("Trend Following Strategy")
+ax1.legend(loc="upper left")
+ax2.legend(loc="upper right")
+
 fig.tight_layout()
 plt.show()
-
 
 final_value = data["Portfolio_Value"].iloc[-1]
 profit = final_value - initial_capital

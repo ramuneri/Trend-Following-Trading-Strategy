@@ -49,6 +49,10 @@ The strategy uses **moving average crossovers** to generate buy and sell signals
 🔽 Sell → sharp drop (stock → cash)
 — Flat → straight line (holding cash)
 
+##### Notes:
+
+- buy/sell signals: 0 = no position, 1 = buy, -1 = sell
+
 TODO
 
 - fix names with .csv
