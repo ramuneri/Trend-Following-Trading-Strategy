@@ -8,12 +8,19 @@ data = data.set_index("Date")
 cols = ["Open", "High", "Low", "Close", "Volume"]
 data[cols] = data[cols].apply(pd.to_numeric, errors='coerce')
 
+take_profit_pct = 0.05
+stop_loss_pct = 0.03
+commission = 0.001
 
-def run_strategy(data, short_window, long_window, take_profit_pct=0.05, stop_loss_pct=0.03, commission=0.001):
+def run_strategy(data, short_window, long_window, take_profit_pct=take_profit_pct, stop_loss_pct=stop_loss_pct, commission=commission):
     df = data.copy()
+    
     df["SMA_short"] = df["Close"].rolling(window=short_window).mean()
     df["SMA_long"] = df["Close"].rolling(window=long_window).mean()
-    df["Signal"] = np.where(df["SMA_short"] > df["SMA_long"], 1, -1)
+        
+    df["Signal"] = 0
+    df.loc[df["SMA_short"] > df["SMA_long"], "Signal"] = 1
+    df.loc[df["SMA_short"] < df["SMA_long"], "Signal"] = -1
 
     cash = 10_000
     portfolio_values = []
@@ -26,21 +33,19 @@ def run_strategy(data, short_window, long_window, take_profit_pct=0.05, stop_los
         signal_now = df["Signal"].iloc[i]
         signal_prev = df["Signal"].iloc[i - 1]
 
-        # Buy
         if signal_now == 1 and signal_prev <= 0 and cash > 0:
             num_shares = (cash * (1 - commission)) / price
             buy_price = price
             cash = 0
 
-        # Sell
         elif signal_now == -1 and signal_prev >= 0 and num_shares > 0:
             cash = num_shares * price * (1 - commission)
             num_shares = 0
             buy_price = 0
 
-        # Take Profit / Stop Loss
         elif num_shares > 0:
             change = (price - buy_price) / buy_price
+
             if change >= take_profit_pct or change <= -stop_loss_pct:
                 cash = num_shares * price * (1 - commission)
                 num_shares = 0
@@ -51,6 +56,7 @@ def run_strategy(data, short_window, long_window, take_profit_pct=0.05, stop_los
 
     df = df.iloc[1:]
     df["Portfolio_Value"] = portfolio_values
+
     return df
 
 
@@ -58,6 +64,7 @@ def sharpe_ratio(portfolio_values):
     returns = pd.Series(portfolio_values).pct_change().dropna()
     if returns.std() == 0:
         return 0
+    
     return (returns.mean() / returns.std()) * np.sqrt(252)
 
 
@@ -88,3 +95,6 @@ for short, long, sharpe, profit in results:
 
 print("\nBest Parameters:")
 print(f"Short SMA = {best_params[0]}, Long SMA = {best_params[1]}, Best Sharpe = {best_sharpe:.3f}")
+
+
+# atspausdinti pelno kitimo grafiką ir palyginti su neoptimizuotais parametrais (0.5 balo)

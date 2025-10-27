@@ -35,12 +35,15 @@ data["Reason"] = ""
 for i in range(1, len(data)):
     price = data["Close"].iloc[i]
 
-    if data["Signal"].iloc[i] == 1 and data["Signal"].iloc[i - 1] <= 0 and cash > 0:
+    signal_now = data["Signal"].iloc[i]
+    signal_prev = data["Signal"].iloc[i - 1]
+
+    if signal_now == 1 and signal_prev <= 0 and cash > 0:
         num_of_shares = (cash * (1 - commission)) / price
         buy_price = price
         cash = 0
 
-    elif data["Signal"].iloc[i] == -1 and data["Signal"].iloc[i - 1] >= 0 and num_of_shares > 0:
+    elif signal_now == -1 and signal_prev >= 0 and num_of_shares > 0:
         cash = num_of_shares * price * (1 - commission)
         num_of_shares = 0
         buy_price = 0
@@ -49,16 +52,14 @@ for i in range(1, len(data)):
         change = (price - buy_price) / buy_price
 
         if change >= take_profit_pct:
-            cash = num_of_shares * price * (1 - commission)
-            num_of_shares = 0
-            buy_price = 0
             data.loc[data.index[i], "Reason"] = "Take Profit"
 
         elif change <= -stop_loss_pct:
-            cash = num_of_shares * price * (1 - commission)
-            num_of_shares = 0
-            buy_price = 0
             data.loc[data.index[i], "Reason"] = "Stop Loss"
+        
+        cash = num_of_shares * price * (1 - commission)
+        num_of_shares = 0
+        buy_price = 0
 
     portfolio_value = cash + num_of_shares * price
     portfolio_values.append(portfolio_value)
