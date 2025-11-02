@@ -8,33 +8,27 @@ data = data.set_index("Date")
 cols = ["Open", "High", "Low", "Close", "Volume"]
 data[cols] = data[cols].apply(pd.to_numeric, errors='coerce')
 
-short_window = 20
-long_window = 50
-
-data["SMA_short"] = data["Close"].rolling(window=short_window).mean()
-data["SMA_long"] = data["Close"].rolling(window=long_window).mean()
+n = 50 
+data["Momentum"] = data["Close"] - data["Close"].shift(n)
 
 data["Signal"] = 0
-data.loc[data["SMA_short"] > data["SMA_long"], "Signal"] = 1
-data.loc[data["SMA_short"] < data["SMA_long"], "Signal"] = -1
+data.loc[data["Momentum"] > 0, "Signal"] = 1
+data.loc[data["Momentum"] < 0, "Signal"] = -1
 
 data["Position_Change"] = data["Signal"].diff()
 
-# ------------------------------------------------------
-
 initial_capital = 10_000
 cash = initial_capital
-portfolio_values = []
 num_of_shares = 0
 take_profit_pct = 0.05
 stop_loss_pct = 0.03
 commission = 0.001
 
 data["Reason"] = ""
+portfolio_values = []
 
 for i in range(1, len(data)):
     price = data["Close"].iloc[i]
-
     signal_now = data["Signal"].iloc[i]
     signal_prev = data["Signal"].iloc[i - 1]
 
@@ -52,14 +46,16 @@ for i in range(1, len(data)):
         change = (price - buy_price) / buy_price
 
         if change >= take_profit_pct:
+            cash = num_of_shares * price * (1 - commission)
+            num_of_shares = 0
+            buy_price = 0
             data.loc[data.index[i], "Reason"] = "Take Profit"
 
         elif change <= -stop_loss_pct:
+            cash = num_of_shares * price * (1 - commission)
+            num_of_shares = 0
+            buy_price = 0
             data.loc[data.index[i], "Reason"] = "Stop Loss"
-        
-        cash = num_of_shares * price * (1 - commission)
-        num_of_shares = 0
-        buy_price = 0
 
     portfolio_value = cash + num_of_shares * price
     portfolio_values.append(portfolio_value)
@@ -67,36 +63,52 @@ for i in range(1, len(data)):
 data = data.iloc[1:]
 data["Portfolio_Value"] = portfolio_values
 
-tp_idx = data.index[data["Reason"] == "Take Profit"]
-sl_idx = data.index[data["Reason"] == "Stop Loss"]
-tp_prices = data["Close"].loc[tp_idx]
-sl_prices = data["Close"].loc[sl_idx]
-
-
-fig, ax1 = plt.subplots(figsize=(16, 7))
+fig, (ax1, ax2) = plt.subplots(
+    2, 1,
+    figsize=(18, 6), 
+    sharex=True,
+    gridspec_kw={'height_ratios': [3, 1]}
+)
 
 ax1.plot(data.index, data["Close"], label="Close Price", color="blue")
-ax1.plot(data.index, data["SMA_short"], label=f"SMA {short_window}", color="green")
-ax1.plot(data.index, data["SMA_long"], label=f"SMA {long_window}", color="orange")
 
-ax1.scatter(tp_idx, tp_prices, color="green", marker="*", s=150, label="Take Profit")
-ax1.scatter(sl_idx, sl_prices, color="red", marker="x", s=100, label="Stop Loss")
+ax1.scatter(
+    data.index[data["Position_Change"] == 2],
+    data["Close"][data["Position_Change"] == 2],
+    label="Buy Signal",
+    marker="^",
+    color="green",
+    s=100,
+)
+ax1.scatter(
+    data.index[data["Position_Change"] == -2],
+    data["Close"][data["Position_Change"] == -2],
+    label="Sell Signal",
+    marker="v",
+    color="red",
+    s=100,
+)
 
-ax1.set_xlabel("Date")
-ax1.set_ylabel("Close Price")
+tp_idx = data.index[data["Reason"] == "Take Profit"]
+sl_idx = data.index[data["Reason"] == "Stop Loss"]
+ax1.scatter(tp_idx, data["Close"].loc[tp_idx], color="lime", marker="*", s=150, label="Take Profit")
+ax1.scatter(sl_idx, data["Close"].loc[sl_idx], color="orange", marker="x", s=100, label="Stop Loss")
+
+ax1.set_title("Momentum Strategy with Price and Trade Signals")
+ax1.set_ylabel("Price")
+ax1.legend()
 ax1.grid(True)
 
-ax2 = ax1.twinx()
-ax2.plot(data.index, data["Portfolio_Value"], color="black", linewidth=2, label="Portfolio Value")
-ax2.set_ylabel("Portfolio Value")
-
-ax1.legend()
+ax2.plot(data.index, data["Momentum"], label=f"Momentum ({n})", color="purple")
+ax2.axhline(0, color="gray", linestyle="--", linewidth=1)
+ax2.set_title("Momentum Indicator")
+ax2.set_xlabel("Date")
+ax2.set_ylabel("Momentum")
 ax2.legend()
+ax2.grid(True)
 
-fig.suptitle("Trend Following Strategy")
-fig.tight_layout()
+plt.tight_layout()
 plt.show()
-
 
 final_value = data["Portfolio_Value"].iloc[-1]
 profit = final_value - initial_capital

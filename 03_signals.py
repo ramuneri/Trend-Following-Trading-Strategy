@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 
 data = pd.read_csv("AAPL.csv")
@@ -9,8 +8,8 @@ data = data.set_index("Date")
 cols = ["Open", "High", "Low", "Close", "Volume"]
 data[cols] = data[cols].apply(pd.to_numeric, errors="coerce")
 
-lookback = 50
-data["Momentum"] = data["Close"] - data["Close"].shift(lookback)
+n = 50
+data["Momentum"] = data["Close"] - data["Close"].shift(n)
 
 data["Signal"] = 0
 data.loc[data["Momentum"] > 0, "Signal"] = 1
@@ -50,7 +49,7 @@ ax1.set_ylabel("Price")
 ax1.legend(loc="upper left")
 ax1.grid(True)
 
-ax2.plot(data.index, data["Momentum"], label=f"Momentum ({lookback})", color="purple")
+ax2.plot(data.index, data["Momentum"], label=f"Momentum ({n})", color="purple")
 ax2.axhline(0, color="black", linestyle="--", linewidth=1)
 ax2.set_ylabel("Momentum")
 ax2.set_xlabel("Date")
