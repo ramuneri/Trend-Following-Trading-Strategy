@@ -14,9 +14,9 @@ Visualize trading signals, portfolio growth, and the indicator over time.
 
 ### Methodology
 
-3.1 Momentum Indicator
+Momentum Indicator
 
-The momentum indicator measures the price change over a defined period 𝑛.
+The momentum indicator measures the price change over a defined period 𝑛:
 
 # Momentum(n) = Close(t) - Close(t-n)
 

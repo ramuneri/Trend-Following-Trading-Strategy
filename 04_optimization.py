@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 data = pd.read_csv("AAPL.csv")
 data["Date"] = pd.to_datetime(data["Date"])
@@ -66,6 +67,7 @@ def sharpe_ratio(portfolio_values):
 
 best_sharpe = -999
 best_n = 0
+default_n = 50
 results = []
 
 for n in range(5, 101, 5):
@@ -87,3 +89,17 @@ for n, sharpe, profit in results:
 
 print("\nBest Parameters:")
 print(f"Best Momentum period n = {best_n}, Best Sharpe = {best_sharpe:.3f}")
+
+
+df_optimized = run_strategy(data, best_n)
+df_default = run_strategy(data, default_n)
+
+plt.figure(figsize=(16, 7))
+plt.plot(df_optimized.index, df_optimized["Portfolio_Value"], label=f"Optimized Momentum({best_n})", color="green")
+plt.plot(df_default.index, df_default["Portfolio_Value"], label=f"Default Momentum({default_n})", color="orange")
+plt.title("Momentum Strategy Portfolio Value")
+plt.xlabel("Date")
+plt.ylabel("Portfolio Value")
+plt.legend()
+plt.grid()
+plt.show()
