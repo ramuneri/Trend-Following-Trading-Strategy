@@ -3,7 +3,7 @@
 ## Description
 
 This project demonstrates the creation, simulation, and optimization of a **trend-following** trading strategy using Python.  
-The strategy uses **moving average crossovers** to generate buy and sell signals, includes **take profit and stop loss mechanisms**, accounts for **transaction costs**, and evaluates performance through an equity curve and Sharpe ratio optimization.
+The strategy uses Momentum Indicator.
 
 ## Features
 
@@ -23,6 +23,8 @@ The strategy uses **moving average crossovers** to generate buy and sell signals
 - yfinance
 
 ## Strategy
+
+### Extra task - with moving averages
 
 ##### IF short_MA > long_MA → we are in an uptrend → buy or hold
 
@@ -52,7 +54,3 @@ The strategy uses **moving average crossovers** to generate buy and sell signals
 ##### Notes:
 
 - buy/sell signals: 0 = no position, 1 = buy, -1 = sell
-
-TODO
-
-- fix names with .csv
