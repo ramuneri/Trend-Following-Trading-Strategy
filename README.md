@@ -1,56 +1,32 @@
-# Trend-Following Trading Strategy in Python
+# Momentum-Based Trading Strategy – Financial Intelligence Project
 
-## Description
+### Project Overview
 
-This project demonstrates the creation, simulation, and optimization of a **trend-following** trading strategy using Python.  
-The strategy uses Momentum Indicator.
+This project implements a momentum-based trading strategy using historical stock price data and evaluates its performance through backtesting and parameter optimization.
+The strategy is designed to demonstrate understanding of key financial concepts such as indicators, trading signals, portfolio simulation, and risk-adjusted performance measures.
 
-## Features
+### Objectives
 
-- Trend-following strategy based on moving averages
-- Buy/sell signals with annotations on price charts
-- Take profit and stop loss for risk management
-- Transaction costs included in profit calculations
-- Parameter optimization using brute-force or random search
-- Performance evaluation with equity curve and Sharpe ratio
+Develop a trading strategy based on a previously created momentum indicator.
+Simulate trades including take-profit, stop-loss, and commission costs.
+Optimize the momentum period to maximize risk-adjusted returns (Sharpe ratio).
+Visualize trading signals, portfolio growth, and the indicator over time.
 
-## Technologies Used
+### Methodology
 
-- Python
-- pandas
-- numpy
-- matplotlib
-- yfinance
+3.1 Momentum Indicator
 
-## Strategy
+The momentum indicator measures the price change over a defined period 𝑛.
 
-### Extra task - with moving averages
+# Momentum(n) = Close(t) - Close(t-n)
 
-##### IF short_MA > long_MA → we are in an uptrend → buy or hold
+#### Trading signals are generated as follows:
 
-- The short MA is above the long MA, meaning recent prices are higher than older prices.
-- This signals momentum upward — trend-following strategy assumes the price will continue rising.
-  Actions:
-- If you are not in a position → buy
-- If you are already holding → do nothing (hold)
+Buy Signal: Momentum crosses from negative to positive.
+Sell Signal: Momentum crosses from positive to negative.
 
-##### IF short_MA < long_MA → we are in a downtrend → sell or stay out
+#### Optional risk management rules:
 
-- The short MA is below the long MA, meaning recent prices are lower than older prices.
-- This signals momentum downward — the trend is falling.
-
-##### Actions:
-
-- If you are holding → sell to avoid losses
-- If you are not holding → stay out
-
-##### Portfolio price changes
-
-🔼 Buy → sharp jump (cash → stock)
-📈 Hold → wiggly line (portfolio follows price)
-🔽 Sell → sharp drop (stock → cash)
-— Flat → straight line (holding cash)
-
-##### Notes:
-
-- buy/sell signals: 0 = no position, 1 = buy, -1 = sell
+Take Profit: Close position when gain exceeds a fixed percentage.
+Stop Loss: Close position when loss exceeds a fixed percentage.
+Commission: Apply trading fees to each transaction.
