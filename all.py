@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -8,113 +9,147 @@ data = data.set_index("Date")
 cols = ["Open", "High", "Low", "Close", "Volume"]
 data[cols] = data[cols].apply(pd.to_numeric, errors='coerce')
 
-short_window = 20
-long_window = 50
-
-data["SMA_short"] = data["Close"].rolling(window=short_window).mean()
-data["SMA_long"] = data["Close"].rolling(window=long_window).mean()
-
-data["Signal"] = 0
-data.loc[data["SMA_short"] > data["SMA_long"], "Signal"] = 1
-data.loc[data["SMA_short"] < data["SMA_long"], "Signal"] = -1
-
-data["Position_Change"] = data["Signal"].diff()
-
-# ------------------------------------------------------
-
-initial_capital = 10_000
-cash = initial_capital
-portfolio_values = []
-num_of_shares = 0
 take_profit_pct = 0.05
 stop_loss_pct = 0.03
 commission = 0.001
+initial_capital = 10_000
+default_n = 50
 
-data["Reason"] = ""
 
-for i in range(1, len(data)):
-    price = data["Close"].iloc[i]
+def run_strategy(data, n, take_profit_pct=take_profit_pct, stop_loss_pct=stop_loss_pct, commission=commission):
+    df = data.copy()
+    df["Momentum"] = df["Close"] - df["Close"].shift(n)
 
-    if data["Signal"].iloc[i] == 1 and data["Signal"].iloc[i - 1] <= 0 and cash > 0:
-        num_of_shares = (cash * (1 - commission)) / price
-        buy_price = price
-        cash = 0
+    df["Signal"] = 0
+    df.loc[df["Momentum"] > 0, "Signal"] = 1
+    df.loc[df["Momentum"] < 0, "Signal"] = -1
 
-    elif data["Signal"].iloc[i] == -1 and data["Signal"].iloc[i - 1] >= 0 and num_of_shares > 0:
-        cash = num_of_shares * price * (1 - commission)
-        num_of_shares = 0
-        buy_price = 0
+    cash = initial_capital
+    num_shares = 0
+    buy_price = 0
+    df["Reason"] = ""
+    portfolio_values = []
 
-    elif num_of_shares > 0:
-        change = (price - buy_price) / buy_price
+    for i in range(1, len(df)):
+        price = df["Close"].iloc[i]
+        signal_now = df["Signal"].iloc[i]
+        signal_prev = df["Signal"].iloc[i - 1]
 
-        if change >= take_profit_pct:
-            cash = num_of_shares * price * (1 - commission)
-            num_of_shares = 0
+        if signal_now == 1 and signal_prev <= 0 and cash > 0:
+            num_shares = (cash * (1 - commission)) / price
+            buy_price = price
+            cash = 0
+
+        elif signal_now == -1 and signal_prev >= 0 and num_shares > 0:
+            cash = num_shares * price * (1 - commission)
+            num_shares = 0
             buy_price = 0
-            data.loc[data.index[i], "Reason"] = "Take Profit"
 
-        elif change <= -stop_loss_pct:
-            cash = num_of_shares * price * (1 - commission)
-            num_of_shares = 0
-            buy_price = 0
-            data.loc[data.index[i], "Reason"] = "Stop Loss"
+        elif num_shares > 0:
+            change = (price - buy_price) / buy_price
+            if change >= take_profit_pct:
+                cash = num_shares * price * (1 - commission)
+                num_shares = 0
+                buy_price = 0
+                df.loc[df.index[i], "Reason"] = "Take Profit"
+            elif change <= -stop_loss_pct:
+                cash = num_shares * price * (1 - commission)
+                num_shares = 0
+                buy_price = 0
+                df.loc[df.index[i], "Reason"] = "Stop Loss"
 
-    portfolio_value = cash + num_of_shares * price
-    portfolio_values.append(portfolio_value)
+        portfolio_value = cash + num_shares * price
+        portfolio_values.append(portfolio_value)
 
-data = data.iloc[1:]
-data["Portfolio_Value"] = portfolio_values
+    df = df.iloc[1:]
+    df["Portfolio_Value"] = portfolio_values
+    return df
 
-fig, ax1 = plt.subplots(figsize=(16, 7))
+def sharpe_ratio(portfolio_values):
+    returns = pd.Series(portfolio_values).pct_change().dropna()
+    if returns.std() == 0:
+        return 0
+    return (returns.mean() / returns.std()) * np.sqrt(252)
 
-ax1.set_xlabel("Date")
-ax1.set_ylabel("Close Price")
-ax1.plot(data.index, data["Close"], label="Close Price", color="blue")
-ax1.plot(data.index, data["SMA_short"], label=f"SMA {short_window}", color="green")
-ax1.plot(data.index, data["SMA_long"], label=f"SMA {long_window}", color="orange")
+best_sharpe = -999
+best_n = 0
+results = []
 
-# Take Profit and Stop Loss markers
-tp_idx = data.index[data["Reason"] == "Take Profit"]
-sl_idx = data.index[data["Reason"] == "Stop Loss"]
+for n in range(5, 101, 5):
+    df_temp = run_strategy(data, n)
+    sharpe = sharpe_ratio(df_temp["Portfolio_Value"])
+    final_value = df_temp["Portfolio_Value"].iloc[-1]
+    profit = final_value - initial_capital
 
-ax1.scatter(tp_idx, data["Close"].loc[tp_idx], color="green", marker="*", s=150, label="Take Profit")
-ax1.scatter(sl_idx, data["Close"].loc[sl_idx], color="red", marker="x", s=100, label="Stop Loss")
+    results.append((n, sharpe, profit))
+    if sharpe > best_sharpe:
+        best_sharpe = sharpe
+        best_n = n
 
+print("Momentum Optimization Results:")
+for n, sharpe, profit in results:
+    print(f"Momentum({n}) → Sharpe: {sharpe:.3f}, Profit: ${profit:,.2f}")
+
+print("\nBest Parameters:")
+print(f"Best Momentum period n = {best_n}, Best Sharpe = {best_sharpe:.3f}")
+
+df_default = run_strategy(data, default_n)
+df_optimized = run_strategy(data, best_n)
+
+fig, (ax1, ax2) = plt.subplots(
+    2, 1,
+    figsize=(18, 7),
+    sharex=True,
+    gridspec_kw={'height_ratios': [3, 1]}
+)
+
+ax1.plot(df_optimized.index, df_optimized["Close"], label="Close Price", color="blue")
 ax1.scatter(
-    data.index[data["Position_Change"] == 2],
-    data["Close"][data["Position_Change"] == 2],
-    label="Buy Signal",
-    marker="^",
-    color="green",
-    s=100,
+    df_optimized.index[df_optimized["Signal"].diff() == 2],
+    df_optimized["Close"][df_optimized["Signal"].diff() == 2],
+    label="Buy Signal", marker="^", color="green", s=100
 )
 ax1.scatter(
-    data.index[data["Position_Change"] == -2],
-    data["Close"][data["Position_Change"] == -2],
-    label="Sell Signal",
-    marker="v",
-    color="red",
-    s=100,
+    df_optimized.index[df_optimized["Signal"].diff() == -2],
+    df_optimized["Close"][df_optimized["Signal"].diff() == -2],
+    label="Sell Signal", marker="v", color="red", s=100
 )
 
-ax1.tick_params(axis='y')
+tp_idx = df_optimized.index[df_optimized["Reason"] == "Take Profit"]
+sl_idx = df_optimized.index[df_optimized["Reason"] == "Stop Loss"]
+ax1.scatter(tp_idx, df_optimized["Close"].loc[tp_idx], color="lime", marker="*", s=150, label="Take Profit")
+ax1.scatter(sl_idx, df_optimized["Close"].loc[sl_idx], color="orange", marker="x", s=100, label="Stop Loss")
+
+ax1.set_title("Momentum Strategy with Price and Trade Signals")
+ax1.set_ylabel("Price ($)")
+ax1.legend()
 ax1.grid(True)
 
-ax2 = ax1.twinx()
-ax2.set_ylabel("Portfolio Value")
-ax2.plot(data.index, data["Portfolio_Value"], label="Portfolio Value", color="purple", linewidth=1)
-ax2.tick_params(axis='y')
+ax2.plot(df_optimized.index, df_optimized["Momentum"], label=f"Momentum ({best_n})", color="purple")
+ax2.axhline(0, color="gray", linestyle="--", linewidth=1)
+ax2.set_title("Momentum Indicator")
+ax2.set_xlabel("Date")
+ax2.set_ylabel("Momentum")
+ax2.legend()
+ax2.grid(True)
 
-fig.suptitle("Trend Following Strategy")
-ax1.legend(loc="upper left")
-ax2.legend(loc="upper right")
-
-fig.tight_layout()
+plt.tight_layout()
 plt.show()
 
-final_value = data["Portfolio_Value"].iloc[-1]
-profit = final_value - initial_capital
-print(f"Initial capital: ${initial_capital:,.2f}")
-print(f"Final portfolio value: ${final_value:,.2f}")
-print(f"Total profit: ${profit:,.2f} ({profit/initial_capital*100:.2f}%)")
+plt.figure(figsize=(16, 6))
+plt.plot(df_default.index, df_default["Portfolio_Value"], label=f"Default Momentum({default_n})", color="orange")
+plt.plot(df_optimized.index, df_optimized["Portfolio_Value"], label=f"Optimized Momentum({best_n})", color="green")
+plt.title("Momentum Strategy Portfolio Value Comparison")
+plt.xlabel("Date")
+plt.ylabel("Portfolio Value ($)")
+plt.legend()
+plt.grid()
+plt.show()
+
+final_value_opt = df_optimized["Portfolio_Value"].iloc[-1]
+profit_opt = final_value_opt - initial_capital
+final_value_def = df_default["Portfolio_Value"].iloc[-1]
+profit_def = final_value_def - initial_capital
+
+print(f"Default Momentum({default_n}): Final portfolio = ${final_value_def:,.2f}, Profit = ${profit_def:,.2f}")
+print(f"Optimized Momentum({best_n}): Final portfolio = ${final_value_opt:,.2f}, Profit = ${profit_opt:,.2f}")

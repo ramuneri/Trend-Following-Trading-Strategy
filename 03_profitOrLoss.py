@@ -8,7 +8,7 @@ data = data.set_index("Date")
 cols = ["Open", "High", "Low", "Close", "Volume"]
 data[cols] = data[cols].apply(pd.to_numeric, errors='coerce')
 
-n = 50 
+n = 100
 data["Momentum"] = data["Close"] - data["Close"].shift(n)
 
 data["Signal"] = 0

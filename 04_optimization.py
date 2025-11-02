@@ -67,7 +67,7 @@ def sharpe_ratio(portfolio_values):
 
 best_sharpe = -999
 best_n = 0
-default_n = 50
+default_n = 100
 results = []
 
 for n in range(5, 101, 5):
