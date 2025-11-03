@@ -6,10 +6,12 @@ data["Date"] = pd.to_datetime(data["Date"])
 data = data.set_index("Date")
 
 cols = ["Open", "High", "Low", "Close", "Volume"]
-data[cols] = data[cols].apply(pd.to_numeric, errors='coerce')
+data[cols] = data[cols].apply(pd.to_numeric, errors="coerce")
 
-n = 100
-data["Momentum"] = data["Close"] - data["Close"].shift(n)
+data["Typical_Price"] = (data["High"] + data["Low"] + data["Close"]) / 3
+
+n = 50  # lookback period
+data["Momentum"] = data["Typical_Price"] - data["Typical_Price"].shift(n)
 
 data["Signal"] = 0
 data.loc[data["Momentum"] > 0, "Signal"] = 1
@@ -28,7 +30,7 @@ data["Reason"] = ""
 portfolio_values = []
 
 for i in range(1, len(data)):
-    price = data["Close"].iloc[i]
+    price = data["Typical_Price"].iloc[i]
     signal_now = data["Signal"].iloc[i]
     signal_prev = data["Signal"].iloc[i - 1]
 
@@ -44,13 +46,11 @@ for i in range(1, len(data)):
 
     elif num_of_shares > 0:
         change = (price - buy_price) / buy_price
-
         if change >= take_profit_pct:
             cash = num_of_shares * price * (1 - commission)
             num_of_shares = 0
             buy_price = 0
             data.loc[data.index[i], "Reason"] = "Take Profit"
-
         elif change <= -stop_loss_pct:
             cash = num_of_shares * price * (1 - commission)
             num_of_shares = 0
@@ -65,24 +65,25 @@ data["Portfolio_Value"] = portfolio_values
 
 fig, (ax1, ax2) = plt.subplots(
     2, 1,
-    figsize=(18, 6), 
+    figsize=(18, 6),
     sharex=True,
     gridspec_kw={'height_ratios': [3, 1]}
 )
 
-ax1.plot(data.index, data["Close"], label="Close Price", color="blue")
+ax1.plot(data.index, data["Typical_Price"], label="Typical Price", color="blue", alpha=0.7)
 
 ax1.scatter(
     data.index[data["Position_Change"] == 2],
-    data["Close"][data["Position_Change"] == 2],
+    data["Typical_Price"][data["Position_Change"] == 2],
     label="Buy Signal",
     marker="^",
     color="green",
     s=100,
 )
+
 ax1.scatter(
     data.index[data["Position_Change"] == -2],
-    data["Close"][data["Position_Change"] == -2],
+    data["Typical_Price"][data["Position_Change"] == -2],
     label="Sell Signal",
     marker="v",
     color="red",
@@ -91,11 +92,11 @@ ax1.scatter(
 
 tp_idx = data.index[data["Reason"] == "Take Profit"]
 sl_idx = data.index[data["Reason"] == "Stop Loss"]
-ax1.scatter(tp_idx, data["Close"].loc[tp_idx], color="lime", marker="*", s=150, label="Take Profit")
-ax1.scatter(sl_idx, data["Close"].loc[sl_idx], color="orange", marker="x", s=100, label="Stop Loss")
+ax1.scatter(tp_idx, data["Typical_Price"].loc[tp_idx], color="lime", marker="*", s=150, label="Take Profit")
+ax1.scatter(sl_idx, data["Typical_Price"].loc[sl_idx], color="orange", marker="x", s=100, label="Stop Loss")
 
-ax1.set_title("Momentum Strategy with Price and Trade Signals")
-ax1.set_ylabel("Price")
+ax1.set_title("Momentum Strategy (using Typical Price)")
+ax1.set_ylabel("Typical Price")
 ax1.legend()
 ax1.grid(True)
 

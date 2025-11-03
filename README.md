@@ -1,5 +1,7 @@
 # Momentum-Based Trading Strategy – Financial Intelligence Project
 
+I used the **momentum indicator** as my trading strategy, but instead of using only the closing price, I used the **typical price** — the average of the high, low, and close — because it represents the middle of the day’s price movement
+
 ### Project Overview
 
 This project implements a momentum-based trading strategy using historical stock price data and evaluates its performance through backtesting and parameter optimization.
@@ -30,3 +32,9 @@ Sell Signal: Momentum crosses from positive to negative.
 Take Profit: Close position when gain exceeds a fixed percentage.
 Stop Loss: Close position when loss exceeds a fixed percentage.
 Commission: Apply trading fees to each transaction.
+
+### Notes:
+
+Extra - mini strategija.
+Prasukti ciklą, prabėgti per duomenis, padaryti paprastą indikatorių.
+1 slenkančio vidurkio pvz. - kai kaina aukštesnė už tą slenkantį vidurkį - nusiperki, jei žemesnė - parduodi.

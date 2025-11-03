@@ -9,6 +9,8 @@ data = data.set_index("Date")
 cols = ["Open", "High", "Low", "Close", "Volume"]
 data[cols] = data[cols].apply(pd.to_numeric, errors='coerce')
 
+data["Typical_Price"] = (data["High"] + data["Low"] + data["Close"]) / 3
+
 take_profit_pct = 0.05
 stop_loss_pct = 0.03
 commission = 0.001
@@ -17,7 +19,7 @@ initial_capital = 10_000
 
 def run_strategy(data, n, take_profit_pct=take_profit_pct, stop_loss_pct=stop_loss_pct, commission=commission):
     df = data.copy()
-    df["Momentum"] = df["Close"] - df["Close"].shift(n)
+    df["Momentum"] = df["Typical_Price"] - df["Typical_Price"].shift(n)
 
     df["Signal"] = 0
     df.loc[df["Momentum"] > 0, "Signal"] = 1
@@ -29,7 +31,7 @@ def run_strategy(data, n, take_profit_pct=take_profit_pct, stop_loss_pct=stop_lo
     portfolio_values = []
 
     for i in range(1, len(df)):
-        price = df["Close"].iloc[i]
+        price = df["Typical_Price"].iloc[i]
         signal_now = df["Signal"].iloc[i]
         signal_prev = df["Signal"].iloc[i - 1]
 
@@ -67,7 +69,7 @@ def sharpe_ratio(portfolio_values):
 
 best_sharpe = -999
 best_n = 0
-default_n = 100
+default_n = 50
 results = []
 
 for n in range(5, 101, 5):
@@ -82,14 +84,12 @@ for n in range(5, 101, 5):
         best_sharpe = sharpe
         best_n = n
 
-
-print("Momentum Optimization Results:")
+print("Momentum Optimization Results (using Typical Price):")
 for n, sharpe, profit in results:
     print(f"Momentum({n}) → Sharpe: {sharpe:.3f}, Profit: ${profit:,.2f}")
 
 print("\nBest Parameters:")
 print(f"Best Momentum period n = {best_n}, Best Sharpe = {best_sharpe:.3f}")
-
 
 df_optimized = run_strategy(data, best_n)
 df_default = run_strategy(data, default_n)
@@ -97,7 +97,7 @@ df_default = run_strategy(data, default_n)
 plt.figure(figsize=(16, 7))
 plt.plot(df_optimized.index, df_optimized["Portfolio_Value"], label=f"Optimized Momentum({best_n})", color="green")
 plt.plot(df_default.index, df_default["Portfolio_Value"], label=f"Default Momentum({default_n})", color="orange")
-plt.title("Momentum Strategy Portfolio Value")
+plt.title("Momentum Strategy Portfolio Value (using Typical Price)")
 plt.xlabel("Date")
 plt.ylabel("Portfolio Value")
 plt.legend()
