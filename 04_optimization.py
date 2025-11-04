@@ -2,15 +2,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-data = pd.read_csv("AAPL.csv")
-data["Date"] = pd.to_datetime(data["Date"])
-data = data.set_index("Date")
-
-cols = ["Open", "High", "Low", "Close", "Volume"]
-data[cols] = data[cols].apply(pd.to_numeric, errors='coerce')
-
-data["Typical_Price"] = (data["High"] + data["Low"] + data["Close"]) / 3
-
 def run_strategy(data, n, take_profit_pct, stop_loss_pct, commission):
     df = data.copy()
     df["Momentum"] = df["Typical_Price"] - df["Typical_Price"].shift(n)
@@ -54,7 +45,7 @@ def run_strategy(data, n, take_profit_pct, stop_loss_pct, commission):
     return df
 
 
-def sharpe_ratio(portfolio_values):
+def sharpe(portfolio_values):
     returns = pd.Series(portfolio_values).pct_change().dropna()
     if returns.std() == 0:
         return 0
@@ -71,9 +62,18 @@ best_sharpe = -999
 best_n = 0
 results = []
 
+data = pd.read_csv("AAPL.csv")
+data["Date"] = pd.to_datetime(data["Date"])
+data = data.set_index("Date")
+
+cols = ["Open", "High", "Low", "Close", "Volume"]
+data[cols] = data[cols].apply(pd.to_numeric, errors='coerce')
+
+data["Typical_Price"] = (data["High"] + data["Low"] + data["Close"]) / 3
+
 for n in range(5, 101, 5):
     df = run_strategy(data, n, take_profit_pct, stop_loss_pct, commission)
-    sharpe = sharpe_ratio(df["Portfolio_Value"])
+    sharpe = sharpe(df["Portfolio_Value"])
     final_value = df["Portfolio_Value"].iloc[-1]
     profit = final_value - initial_capital
 
@@ -95,7 +95,7 @@ df_default = run_strategy(data, n, take_profit_pct, stop_loss_pct, commission)
 
 plt.figure(figsize=(16, 7))
 plt.plot(df_optimized.index, df_optimized["Portfolio_Value"], label=f"Optimized Momentum({best_n}) - Sharpe: {best_sharpe:.3f}", color="green")
-plt.plot(df_default.index, df_default["Portfolio_Value"], label=f"Default Momentum({n}) - Sharpe: {sharpe_ratio(df_default['Portfolio_Value']):.3f}", color="orange")
+plt.plot(df_default.index, df_default["Portfolio_Value"], label=f"Default Momentum({n}) - Sharpe: {sharpe(df_default['Portfolio_Value']):.3f}", color="orange")
 plt.title("Momentum Strategy Portfolio Value")
 plt.xlabel("Date")
 plt.ylabel("Portfolio Value")

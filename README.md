@@ -33,6 +33,24 @@ Take Profit: Close position when gain exceeds a fixed percentage.
 Stop Loss: Close position when loss exceeds a fixed percentage.
 Commission: Apply trading fees to each transaction.
 
+## Sharpe ratio
+
+How good your strategy’s returns are compared to its risk.
+
+| Sharpe Ratio | Meaning               |
+| ------------ | --------------------- |
+| < 1.0        | Weak / risky strategy |
+| 1.0–2.0      | Decent, acceptable    |
+| 2.0–3.0      | Very good             |
+| > 3.0        | Excellent and stable  |
+
+Deviation (specifically standard deviation) means how much something moves away from its average.
+
+How the code works:
+- Calculates average daily return
+- Divides by daily volatility
+- Converts to annual scale
+
 ### Notes:
 
 Extra - mini strategija.
