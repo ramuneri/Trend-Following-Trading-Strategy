@@ -4,9 +4,7 @@ ticker = "AAPL"
 start="2020-11-02"
 end="2025-11-02"
 
-data = yf.download(ticker, start=start, end=end, interval="1d", auto_adjust=False)
-data = data[['Open', 'High', 'Low', 'Adj Close', 'Volume']]
-data.rename(columns={'Adj Close': 'Close'}, inplace=True)
+data = yf.download(ticker, start=start, end=end, interval="1d", auto_adjust=True)
 
-data.reset_index(inplace=True)
+data = data.reset_index()
 data.to_csv(f"{ticker}.csv", index=False)

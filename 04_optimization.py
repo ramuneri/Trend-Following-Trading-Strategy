@@ -11,13 +11,7 @@ data[cols] = data[cols].apply(pd.to_numeric, errors='coerce')
 
 data["Typical_Price"] = (data["High"] + data["Low"] + data["Close"]) / 3
 
-take_profit_pct = 0.05
-stop_loss_pct = 0.03
-commission = 0.001
-initial_capital = 10_000
-
-
-def run_strategy(data, n, take_profit_pct=take_profit_pct, stop_loss_pct=stop_loss_pct, commission=commission):
+def run_strategy(data, n, take_profit_pct, stop_loss_pct, commission):
     df = data.copy()
     df["Momentum"] = df["Typical_Price"] - df["Typical_Price"].shift(n)
 
@@ -67,13 +61,18 @@ def sharpe_ratio(portfolio_values):
     return (returns.mean() / returns.std()) * np.sqrt(252)
 
 
+n = 50
+initial_capital = 10_000
+take_profit_pct = 0.05
+stop_loss_pct = 0.03
+commission = 0.001
+
 best_sharpe = -999
 best_n = 0
-default_n = 50
 results = []
 
 for n in range(5, 101, 5):
-    df = run_strategy(data, n)
+    df = run_strategy(data, n, take_profit_pct, stop_loss_pct, commission)
     sharpe = sharpe_ratio(df["Portfolio_Value"])
     final_value = df["Portfolio_Value"].iloc[-1]
     profit = final_value - initial_capital
@@ -84,19 +83,19 @@ for n in range(5, 101, 5):
         best_sharpe = sharpe
         best_n = n
 
-print("Momentum Optimization Results (using Typical Price):")
+print("Momentum Optimization Results:")
 for n, sharpe, profit in results:
     print(f"Momentum({n}) → Sharpe: {sharpe:.3f}, Profit: ${profit:,.2f}")
 
 print("\nBest Parameters:")
 print(f"Best Momentum period n = {best_n}, Best Sharpe = {best_sharpe:.3f}")
 
-df_optimized = run_strategy(data, best_n)
-df_default = run_strategy(data, default_n)
+df_optimized = run_strategy(data, best_n, take_profit_pct, stop_loss_pct, commission)
+df_default = run_strategy(data, n, take_profit_pct, stop_loss_pct, commission)
 
 plt.figure(figsize=(16, 7))
 plt.plot(df_optimized.index, df_optimized["Portfolio_Value"], label=f"Optimized Momentum({best_n}) - Sharpe: {best_sharpe:.3f}", color="green")
-plt.plot(df_default.index, df_default["Portfolio_Value"], label=f"Default Momentum({default_n}) - Sharpe: {sharpe_ratio(df_default['Portfolio_Value']):.3f}", color="orange")
+plt.plot(df_default.index, df_default["Portfolio_Value"], label=f"Default Momentum({n}) - Sharpe: {sharpe_ratio(df_default['Portfolio_Value']):.3f}", color="orange")
 plt.title("Momentum Strategy Portfolio Value")
 plt.xlabel("Date")
 plt.ylabel("Portfolio Value")

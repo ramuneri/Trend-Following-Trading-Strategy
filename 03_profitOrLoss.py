@@ -17,7 +17,32 @@ data["Signal"] = 0
 data.loc[data["Momentum"] > 0, "Signal"] = 1
 data.loc[data["Momentum"] < 0, "Signal"] = -1
 
-data["Position_Change"] = data["Signal"].diff()
+
+
+fig, (ax1, ax2) = plt.subplots(
+    2, 1,
+    figsize=(18, 6),
+    sharex=True,
+    gridspec_kw={'height_ratios': [3, 1]}
+)
+
+
+ax1.scatter(
+    data.index[data["Signal"].diff() == 2],
+    data["Typical_Price"][data["Signal"].diff() == 2],
+    label="Buy Signal",
+    marker="^",
+    color="green",
+)
+
+ax1.scatter(
+    data.index[data["Signal"].diff() == -2],
+    data["Typical_Price"][data["Signal"].diff() == -2],
+    label="Sell Signal",
+    marker="v",
+    color="red",
+)
+
 
 initial_capital = 10_000
 cash = initial_capital
@@ -44,18 +69,21 @@ for i in range(1, len(data)):
         num_of_shares = 0
         buy_price = 0
 
+
     elif num_of_shares > 0:
         change = (price - buy_price) / buy_price
+
         if change >= take_profit_pct:
             cash = num_of_shares * price * (1 - commission)
             num_of_shares = 0
             buy_price = 0
-            data.loc[data.index[i], "Reason"] = "Take Profit"
+            data.loc[data.index[i], "Reason"] = "Take"
+
         elif change <= -stop_loss_pct:
             cash = num_of_shares * price * (1 - commission)
             num_of_shares = 0
             buy_price = 0
-            data.loc[data.index[i], "Reason"] = "Stop Loss"
+            data.loc[data.index[i], "Reason"] = "Stop"
 
     portfolio_value = cash + num_of_shares * price
     portfolio_values.append(portfolio_value)
@@ -63,52 +91,27 @@ for i in range(1, len(data)):
 data = data.iloc[1:]
 data["Portfolio_Value"] = portfolio_values
 
-fig, (ax1, ax2) = plt.subplots(
-    2, 1,
-    figsize=(18, 6),
-    sharex=True,
-    gridspec_kw={'height_ratios': [3, 1]}
+
+tp_idx = data.index[data["Reason"] == "Take"]
+sl_idx = data.index[data["Reason"] == "Stop"]
+
+ax1.scatter(
+    tp_idx,
+    data["Typical_Price"].loc[tp_idx],
+    label="Take Profit",
+    marker="*",
+    color="lime",
+)
+
+ax1.scatter(
+    sl_idx,
+    data["Typical_Price"].loc[sl_idx],
+    label="Stop Loss",
+    marker="x",
+    color="orange",
 )
 
 ax1.plot(data.index, data["Typical_Price"], label="Typical Price", color="blue", alpha=0.7)
-
-ax1.scatter(
-    data.index[data["Position_Change"] == 2],
-    data["Typical_Price"][data["Position_Change"] == 2],
-    label="Buy Signal",
-    marker="^",
-    color="green",
-    s=100,
-)
-
-ax1.scatter(
-    data.index[data["Position_Change"] == -2],
-    data["Typical_Price"][data["Position_Change"] == -2],
-    label="Sell Signal",
-    marker="v",
-    color="red",
-    s=100,
-)
-
-tp_idx = data.index[data["Reason"] == "Take Profit"]
-sl_idx = data.index[data["Reason"] == "Stop Loss"]
-
-ax1.scatter(tp_idx,
-            data["Typical_Price"].loc[tp_idx],
-            color="lime",
-            marker="*",
-            s=150,
-            label="Take Profit"
-            )
-
-ax1.scatter(sl_idx,
-            data["Typical_Price"].loc[sl_idx],
-            color="orange",
-            marker="x",
-            s=100,
-            label="Stop Loss"\
-            )
-
 ax1.set_title("Momentum Strategy (using Typical Price)")
 ax1.set_ylabel("Typical Price")
 ax1.legend()

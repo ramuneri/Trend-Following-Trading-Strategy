@@ -13,12 +13,10 @@ data["Typical_Price"] = (data["High"] + data["Low"] + data["Close"]) / 3
 n = 50
 data["Momentum"] = data["Typical_Price"] - data["Typical_Price"].shift(n)
 
-
 data["Signal"] = 0
 data.loc[data["Momentum"] > 0, "Signal"] = 1
 data.loc[data["Momentum"] < 0, "Signal"] = -1
 
-data["Position_Change"] = data["Signal"].diff()
 
 fig, (ax1, ax2) = plt.subplots(
     2, 1,
@@ -27,26 +25,23 @@ fig, (ax1, ax2) = plt.subplots(
     gridspec_kw={'height_ratios': [3, 1]}
 )
 
-ax1.plot(data.index, data["Typical_Price"], label="Typical Price", color="blue")
-
 ax1.scatter(
-    data.index[data["Position_Change"] == 2],
-    data["Typical_Price"][data["Position_Change"] == 2],
+    data.index[data["Signal"].diff() == 2],
+    data["Typical_Price"][data["Signal"].diff() == 2],
     label="Buy Signal (Momentum > 0)",
     marker="^",
     color="green",
-    s=100,
 )
 
 ax1.scatter(
-    data.index[data["Position_Change"] == -2],
-    data["Typical_Price"][data["Position_Change"] == -2],
+    data.index[data["Signal"].diff() == -2],
+    data["Typical_Price"][data["Signal"].diff() == -2],
     label="Sell Signal (Momentum < 0)",
     marker="v",
     color="red",
-    s=100,
 )
 
+ax1.plot(data.index, data["Typical_Price"], label="Typical Price", color="blue")
 ax1.set_title("Momentum-Based Trading Strategy")
 ax1.set_ylabel("Typical Price")
 ax1.legend()
