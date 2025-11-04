@@ -1,7 +1,7 @@
 import yfinance as yf
 
 ticker = "AAPL"
-start="2015-11-02"
+start="2020-11-02"
 end="2025-11-02"
 
 data = yf.download(ticker, start=start, end=end, interval="1d", auto_adjust=False)

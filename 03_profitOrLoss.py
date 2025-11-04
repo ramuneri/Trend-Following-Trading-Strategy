@@ -10,7 +10,7 @@ data[cols] = data[cols].apply(pd.to_numeric, errors="coerce")
 
 data["Typical_Price"] = (data["High"] + data["Low"] + data["Close"]) / 3
 
-n = 50  # lookback period
+n = 50
 data["Momentum"] = data["Typical_Price"] - data["Typical_Price"].shift(n)
 
 data["Signal"] = 0
