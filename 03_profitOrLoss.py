@@ -92,8 +92,22 @@ ax1.scatter(
 
 tp_idx = data.index[data["Reason"] == "Take Profit"]
 sl_idx = data.index[data["Reason"] == "Stop Loss"]
-ax1.scatter(tp_idx, data["Typical_Price"].loc[tp_idx], color="lime", marker="*", s=150, label="Take Profit")
-ax1.scatter(sl_idx, data["Typical_Price"].loc[sl_idx], color="orange", marker="x", s=100, label="Stop Loss")
+
+ax1.scatter(tp_idx,
+            data["Typical_Price"].loc[tp_idx],
+            color="lime",
+            marker="*",
+            s=150,
+            label="Take Profit"
+            )
+
+ax1.scatter(sl_idx,
+            data["Typical_Price"].loc[sl_idx],
+            color="orange",
+            marker="x",
+            s=100,
+            label="Stop Loss"\
+            )
 
 ax1.set_title("Momentum Strategy (using Typical Price)")
 ax1.set_ylabel("Typical Price")

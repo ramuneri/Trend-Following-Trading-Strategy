@@ -43,9 +43,10 @@ def run_strategy(data, window, take_profit_pct=take_profit_pct, stop_loss_pct=st
     df.loc[df["Typical_Price"] < df["SMA"], "Signal"] = -1
 
     cash = initial_capital
-    num_shares = 0
+    shares = 0
     buy_price = 0
     portfolio_values = []
+    df["Reason"] = ""
 
     for i in range(1, len(df)):
         price = df["Typical_Price"].iloc[i]
@@ -54,25 +55,31 @@ def run_strategy(data, window, take_profit_pct=take_profit_pct, stop_loss_pct=st
 
         # Buy signal (price crosses above SMA)
         if signal_now == 1 and signal_prev <= 0 and cash > 0:
-            num_shares = (cash * (1 - commission)) / price
+            shares = (cash * (1 - commission)) / price
             buy_price = price
             cash = 0
 
         # Sell signal (price crosses below SMA)
-        elif signal_now == -1 and signal_prev >= 0 and num_shares > 0:
-            cash = num_shares * price * (1 - commission)
-            num_shares = 0
+        elif signal_now == -1 and signal_prev >= 0 and shares > 0:
+            cash = shares * price * (1 - commission)
+            shares = 0
             buy_price = 0
 
         # Check take profit / stop loss while holding
-        elif num_shares > 0:
+        elif shares > 0:
             change = (price - buy_price) / buy_price
-            if change >= take_profit_pct or change <= -stop_loss_pct:
-                cash = num_shares * price * (1 - commission)
-                num_shares = 0
+            if change >= take_profit_pct:
+                cash = shares * price * (1 - commission)
+                shares = 0
                 buy_price = 0
+                df.loc[df.index[i], "Reason"] = "Take Profit"
+            elif change <= -stop_loss_pct:
+                cash = shares * price * (1 - commission)
+                shares = 0
+                buy_price = 0
+                df.loc[df.index[i], "Reason"] = "Stop Loss"
 
-        portfolio_value = cash + num_shares * price
+        portfolio_value = cash + shares * price
         portfolio_values.append(portfolio_value)
 
     df = df.iloc[1:]
@@ -110,6 +117,25 @@ plt.scatter(data.index[data["Signal"].diff() == -2],
             marker="v",
             color="red",
             label="Sell Signal"
+            )
+
+tp_idx = data.index[data["Reason"] == "Take Profit"]
+sl_idx = data.index[data["Reason"] == "Stop Loss"]
+
+plt.scatter(tp_idx,
+            data["Typical_Price"].loc[tp_idx],
+            color="lime",
+            marker="*",
+            s=150,
+            label="Take Profit"
+            )
+
+plt.scatter(sl_idx,
+            data["Typical_Price"].loc[sl_idx],
+            color="orange",
+            marker="x",
+            s=100,
+            label="Stop Loss"\
             )
 
 plt.title("Mini Strategy")
