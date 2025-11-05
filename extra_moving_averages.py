@@ -95,13 +95,15 @@ plt.scatter(data.index[data["Signal"].diff() == 2],
             data["Typical_Price"][data["Signal"].diff() == 2],
             marker="^",
             color="green",
-            label="Buy Signal")
+            label="Buy Signal"
+)
+
 plt.scatter(data.index[data["Signal"].diff() == -2],
             data["Typical_Price"][data["Signal"].diff() == -2],
             marker="v",
             color="red",
             label="Sell Signal"
-            )
+)
 
 tp_idx = data.index[data["Reason"] == "Take Profit"]
 sl_idx = data.index[data["Reason"] == "Stop Loss"]
@@ -110,17 +112,15 @@ plt.scatter(tp_idx,
             data["Typical_Price"].loc[tp_idx],
             color="lime",
             marker="*",
-            s=150,
             label="Take Profit"
-            )
+)
 
 plt.scatter(sl_idx,
             data["Typical_Price"].loc[sl_idx],
             color="orange",
             marker="x",
-            s=100,
             label="Stop Loss"\
-            )
+)
 
 plt.title("Mini Strategy")
 plt.xlabel("Date")
@@ -130,9 +130,8 @@ plt.legend()
 plt.show()
 
 
-# ===============================
-# 4️⃣ Parameter Optimization Loop
-# ===============================
+
+
 best_sharpe = -999
 best_window = window
 results = []
