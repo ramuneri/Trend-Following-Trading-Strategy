@@ -45,61 +45,82 @@ def run_strategy(data, n, take_profit_pct, stop_loss_pct, commission):
     return df
 
 
-def sharpe(portfolio_values):
+def sharpe_ratio(portfolio_values):
     returns = pd.Series(portfolio_values).pct_change().dropna()
     if returns.std() == 0:
         return 0
     return (returns.mean() / returns.std()) * np.sqrt(252)
 
 
-n = 50
+
 initial_capital = 10_000
 take_profit_pct = 0.05
 stop_loss_pct = 0.03
 commission = 0.001
+default_n = 50
 
 best_sharpe = -999
 best_n = 0
 results = []
+
 
 data = pd.read_csv("AAPL.csv")
 data["Date"] = pd.to_datetime(data["Date"])
 data = data.set_index("Date")
 
 cols = ["Open", "High", "Low", "Close", "Volume"]
-data[cols] = data[cols].apply(pd.to_numeric, errors='coerce')
+data[cols] = data[cols].apply(pd.to_numeric, errors="coerce")
 
 data["Typical_Price"] = (data["High"] + data["Low"] + data["Close"]) / 3
 
+
 for n in range(5, 101, 5):
     df = run_strategy(data, n, take_profit_pct, stop_loss_pct, commission)
-    sharpe = sharpe(df["Portfolio_Value"])
+    sharpe_val = sharpe_ratio(df["Portfolio_Value"])
     final_value = df["Portfolio_Value"].iloc[-1]
     profit = final_value - initial_capital
 
-    results.append((n, sharpe, profit))
+    results.append((n, sharpe_val, profit))
 
-    if sharpe > best_sharpe:
-        best_sharpe = sharpe
+    if sharpe_val > best_sharpe:
+        best_sharpe = sharpe_val
         best_n = n
 
-print("Momentum Optimization Results:")
-for n, sharpe, profit in results:
-    print(f"Momentum({n}) → Sharpe: {sharpe:.3f}, Profit: ${profit:,.2f}")
+print("\n-----------------------------------------------\nMomentum Optimization Results:")
+for n, sharpe_val, profit in results:
+    print(f"Momentum({n}) Sharpe: {sharpe_val:.3f}, Profit: ${profit:,.2f}")
 
-print("\nBest Parameters:")
-print(f"Best Momentum period n = {best_n}, Best Sharpe = {best_sharpe:.3f}")
+print(f"\nBest Momentum period n = {best_n}, Best Sharpe = {best_sharpe:.3f}")
+print("-----------------------------------------------\n")
+
 
 df_optimized = run_strategy(data, best_n, take_profit_pct, stop_loss_pct, commission)
-df_default = run_strategy(data, n, take_profit_pct, stop_loss_pct, commission)
+df_default = run_strategy(data, default_n, take_profit_pct, stop_loss_pct, commission)
 
-plt.figure(figsize=(16, 7))
-plt.plot(df_optimized.index, df_optimized["Portfolio_Value"], label=f"Optimized Momentum({best_n}) - Sharpe: {best_sharpe:.3f}", color="green")
-plt.plot(df_default.index, df_default["Portfolio_Value"], label=f"Default Momentum({n}) - Sharpe: {sharpe(df_default['Portfolio_Value']):.3f}", color="orange")
-plt.title("Momentum Strategy Portfolio Value")
-plt.xlabel("Date")
-plt.ylabel("Portfolio Value")
-plt.legend()
-plt.grid()
+df_default["Profit"] = df_default["Portfolio_Value"] - initial_capital
+df_optimized["Profit"] = df_optimized["Portfolio_Value"] - initial_capital
+
+
+fig, (ax1, ax2) = plt.subplots(
+    2, 1, 
+    figsize=(16, 8), 
+    sharex=True,
+    gridspec_kw={'height_ratios': [2, 1]}
+)
+
+ax1.plot(data.index, data["Typical_Price"], color="blue", label="Typical Price")
+ax1.set_title("Typical Price and Portfolio Profit Over Time")
+ax1.set_ylabel("Price")
+ax1.legend()
+ax1.grid(True)
+
+ax2.plot(df_default.index, df_default["Profit"], label=f"Default Momentum({default_n}) - Sharpe: {sharpe_ratio(df_default['Portfolio_Value']):.3f}", color="orange")
+ax2.plot(df_optimized.index, df_optimized["Profit"], label=f"Optimized Momentum({best_n}) - Sharpe: {best_sharpe:.3f}", color="green")
+ax2.axhline(0, color="black", linestyle="--", linewidth=1)
+ax2.set_ylabel("Profit")
+ax2.set_xlabel("Date")
+ax2.legend()
+ax2.grid(True)
+
 plt.tight_layout()
 plt.show()

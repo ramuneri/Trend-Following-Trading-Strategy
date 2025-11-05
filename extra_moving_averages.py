@@ -3,41 +3,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import yfinance as yf
 
-# ===============================
-# 1️⃣ Data Preparation
-# ===============================
-ticker = "AAPL"
-start = "2020-01-01"
-end = "2025-01-01"
-default_window = 50
 
-data = yf.download(ticker, start=start, end=end, interval="1d", auto_adjust=True)
-data.columns = [col[0] if isinstance(col, tuple) else col for col in data.columns]
-
-data["Typical_Price"] = (data["High"] + data["Low"] + data["Close"]) / 3
-data.dropna(inplace=True)
-
-data["SMA"] = data["Typical_Price"].rolling(window=default_window).mean()
-
-
-# Strategy parameters
-take_profit_pct = 0.05
-stop_loss_pct = 0.03
-commission = 0.001
-initial_capital = 10_000
-
-
-# ===============================
-# 2️⃣ Define Trading Strategy
-# ===============================
-def run_strategy(data, window, take_profit_pct=take_profit_pct, stop_loss_pct=stop_loss_pct,
-                 commission=commission, initial_capital=initial_capital):
+def run_strategy(data, window, take_profit_pct, stop_loss_pct, commission, initial_capital):
     df = data.copy()
 
-    # Calculate SMA based on Typical Price
     df["SMA"] = df["Typical_Price"].rolling(window=window).mean()
 
-    # Generate signals
     df["Signal"] = 0
     df.loc[df["Typical_Price"] > df["SMA"], "Signal"] = 1
     df.loc[df["Typical_Price"] < df["SMA"], "Signal"] = -1
@@ -87,9 +58,6 @@ def run_strategy(data, window, take_profit_pct=take_profit_pct, stop_loss_pct=st
     return df
 
 
-# ===============================
-# 3️⃣ Sharpe Ratio Function
-# ===============================
 def sharpe_ratio(portfolio_values):
     returns = pd.Series(portfolio_values).pct_change().dropna()
     if returns.std() == 0:
@@ -97,11 +65,27 @@ def sharpe_ratio(portfolio_values):
     return (returns.mean() / returns.std()) * np.sqrt(252)
 
 
-# ===============================
-# ...
-# ===============================
 
-data = run_strategy(data, default_window)
+ticker = "AAPL"
+start = "2020-01-01"
+end = "2025-01-01"
+window = 50
+
+take_profit_pct = 0.05
+stop_loss_pct = 0.03
+commission = 0.001
+initial_capital = 10_000
+
+data = yf.download(ticker, start=start, end=end, interval="1d", auto_adjust=True)
+# data.columns = [col[0] if isinstance(col, tuple) else col for col in data.columns]
+data.columns = [col[0] for col in data.columns]
+
+data["Typical_Price"] = (data["High"] + data["Low"] + data["Close"]) / 3
+# data.dropna(inplace=True)
+data["SMA"] = data["Typical_Price"].rolling(window=window).mean()
+
+
+data = run_strategy(data, window, take_profit_pct, stop_loss_pct, commission, initial_capital)
 
 plt.figure(figsize=(16,7))
 plt.plot(data.index, data["Typical_Price"], label="Price", color="blue")
@@ -150,11 +134,11 @@ plt.show()
 # 4️⃣ Parameter Optimization Loop
 # ===============================
 best_sharpe = -999
-best_window = default_window
+best_window = window
 results = []
 
 for window in range(5, 101, 5):
-    df = run_strategy(data, window)
+    df = run_strategy(data, window, take_profit_pct, stop_loss_pct, commission, initial_capital)
     sharpe = sharpe_ratio(df["Portfolio_Value"])
     final_value = df["Portfolio_Value"].iloc[-1]
     profit = final_value - initial_capital
@@ -176,8 +160,8 @@ print(f"Best SMA window = {best_window}, Best Sharpe = {best_sharpe:.3f}")
 # ===============================
 # 5️⃣ Run Best vs Default Strategy
 # ===============================
-df_optimized = run_strategy(data, best_window)
-df_default = run_strategy(data, default_window)
+df_optimized = run_strategy(data, best_window, take_profit_pct, stop_loss_pct, commission, initial_capital)
+df_default = run_strategy(data, window, take_profit_pct, stop_loss_pct, commission, initial_capital)
 
 # ===============================
 # 6️⃣ Plot Portfolio Value Comparison
@@ -186,7 +170,7 @@ plt.figure(figsize=(16, 7))
 plt.plot(df_optimized.index, df_optimized["Portfolio_Value"],
          label=f"Optimized SMA({best_window}) - Sharpe: {best_sharpe:.3f}", color="green")
 plt.plot(df_default.index, df_default["Portfolio_Value"],
-         label=f"Default SMA({default_window}) - Sharpe: {sharpe_ratio(df_default['Portfolio_Value']):.3f}", color="orange")
+         label=f"Default SMA({window}) - Sharpe: {sharpe_ratio(df_default['Portfolio_Value']):.3f}", color="orange")
 
 plt.title("Portfolio Value: Default vs Optimized SMA Strategy (Typical Price)")
 plt.xlabel("Date")
@@ -206,5 +190,5 @@ final_optimized = df_optimized["Portfolio_Value"].iloc[-1]
 profit_default = final_default - initial_capital
 profit_optimized = final_optimized - initial_capital
 
-print(f"\nDefault SMA({default_window}) → Final Value: ${final_default:,.2f}, Profit: ${profit_default:,.2f} ({profit_default/initial_capital*100:.2f}%)")
+print(f"\nDefault SMA({window}) → Final Value: ${final_default:,.2f}, Profit: ${profit_default:,.2f} ({profit_default/initial_capital*100:.2f}%)")
 print(f"Optimized SMA({best_window}) → Final Value: ${final_optimized:,.2f}, Profit: ${profit_optimized:,.2f} ({profit_optimized/initial_capital*100:.2f}%)")
