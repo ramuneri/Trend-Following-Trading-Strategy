@@ -91,28 +91,24 @@ for i in range(1, len(data)):
 data = data.iloc[1:]
 data["Portfolio_Value"] = portfolio_values
 
-
-tp_idx = data.index[data["Reason"] == "Take"]
-sl_idx = data.index[data["Reason"] == "Stop"]
-
 ax1.scatter(
-    tp_idx,
-    data["Typical_Price"].loc[tp_idx],
+    data.index[data["Reason"] == "Take"],
+    data["Typical_Price"].loc[data.index[data["Reason"] == "Take"]],
     label="Take Profit",
     marker="*",
     color="lime",
 )
 
 ax1.scatter(
-    sl_idx,
-    data["Typical_Price"].loc[sl_idx],
+    data.index[data["Reason"] == "Stop"],
+    data["Typical_Price"].loc[data.index[data["Reason"] == "Stop"]],
     label="Stop Loss",
     marker="x",
     color="orange",
 )
 
 ax1.plot(data.index, data["Typical_Price"], label="Typical Price", color="blue", alpha=0.7)
-ax1.set_title("Momentum Strategy (using Typical Price)")
+ax1.set_title("Momentum Strategy)")
 ax1.set_ylabel("Typical Price")
 ax1.legend()
 ax1.grid(True)

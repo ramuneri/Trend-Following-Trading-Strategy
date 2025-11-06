@@ -130,8 +130,6 @@ plt.legend()
 plt.show()
 
 
-
-
 best_sharpe = -999
 best_window = window
 results = []
@@ -147,7 +145,7 @@ for window in range(5, 101, 5):
         best_sharpe = sharpe
         best_window = window
 
-# Print optimization summary
+
 print("SMA Optimization Results (using Typical Price):")
 for window, sharpe, profit in results:
     print(f"SMA({window}) → Sharpe: {sharpe:.3f}, Profit: ${profit:,.2f}")
@@ -156,33 +154,28 @@ print("\nBest Parameters:")
 print(f"Best SMA window = {best_window}, Best Sharpe = {best_sharpe:.3f}")
 
 
-# ===============================
-# 5️⃣ Run Best vs Default Strategy
-# ===============================
+
 df_optimized = run_strategy(data, best_window, take_profit_pct, stop_loss_pct, commission, initial_capital)
 df_default = run_strategy(data, window, take_profit_pct, stop_loss_pct, commission, initial_capital)
 
-# ===============================
-# 6️⃣ Plot Portfolio Value Comparison
-# ===============================
+
+
 plt.figure(figsize=(16, 7))
-plt.plot(df_optimized.index, df_optimized["Portfolio_Value"],
-         label=f"Optimized SMA({best_window}) - Sharpe: {best_sharpe:.3f}", color="green")
-plt.plot(df_default.index, df_default["Portfolio_Value"],
-         label=f"Default SMA({window}) - Sharpe: {sharpe_ratio(df_default['Portfolio_Value']):.3f}", color="orange")
+plt.plot(df_optimized.index, df_optimized["Portfolio_Value"], label=f"Optimized SMA({best_window}) - Sharpe: {best_sharpe:.3f}", color="green")
+plt.plot(df_default.index, df_default["Portfolio_Value"], label=f"Default SMA({window}) - Sharpe: {sharpe_ratio(df_default['Portfolio_Value']):.3f}", color="orange")
+
+
 
 plt.title("Portfolio Value: Default vs Optimized SMA Strategy (Typical Price)")
 plt.xlabel("Date")
-plt.ylabel("Portfolio Value (USD)")
+plt.ylabel("Portfolio Value")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
 plt.show()
 
 
-# ===============================
-# 8️⃣ Print Final Statistics
-# ===============================
+
 final_default = df_default["Portfolio_Value"].iloc[-1]
 final_optimized = df_optimized["Portfolio_Value"].iloc[-1]
 

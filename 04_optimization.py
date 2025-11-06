@@ -81,7 +81,6 @@ for n in range(5, 101, 5):
     profit = final_value - initial_capital
 
     results.append((n, sharpe_val, profit))
-
     if sharpe_val > best_sharpe:
         best_sharpe = sharpe_val
         best_n = n
@@ -108,8 +107,8 @@ fig, (ax1, ax2) = plt.subplots(
     gridspec_kw={'height_ratios': [2, 1]}
 )
 
-ax1.plot(data.index, data["Typical_Price"], color="blue", label="Typical Price")
-ax1.set_title("Typical Price and Portfolio Profit Over Time")
+ax1.plot(data.index, data["Typical_Price"], color="blue", label="Price")
+ax1.set_title("Price and Portfolio Profit Over Time")
 ax1.set_ylabel("Price")
 ax1.legend()
 ax1.grid(True)

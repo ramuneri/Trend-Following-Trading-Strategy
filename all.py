@@ -138,7 +138,7 @@ for n in range(5, 101, 5):
         best_sharpe = sharpe_value
         best_n = n
 
-print("\nMomentum Optimization Results (using Typical Price):")
+print("\nMomentum Optimization Results:")
 for n, sharpe_value, profit in results:
     print(f"Momentum({n}) → Sharpe: {sharpe_value:.3f}, Profit: ${profit:,.2f}")
 
@@ -154,7 +154,7 @@ plt.plot(df_optimized.index, df_optimized["Portfolio_Value"], label=f"Optimized 
 plt.plot(df_default.index, df_default["Portfolio_Value"], label=f"Default Momentum({n}) - Sharpe: {sharpe(df_default['Portfolio_Value']):.3f}", color="orange")
 plt.title("Portfolio Value Comparison")
 plt.xlabel("Date")
-plt.ylabel("Portfolio Value ($)")
+plt.ylabel("Portfolio Value")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
@@ -167,5 +167,5 @@ final_optimized = df_optimized["Portfolio_Value"].iloc[-1]
 profit_default = final_default - initial_capital
 profit_optimized = final_optimized - initial_capital
 
-print(f"\nDefault (n={default_n}) → Final: ${final_default:,.2f} | Profit: ${profit_default:,.2f} ({profit_default/initial_capital*100:.2f}%)")
-print(f"Optimized (n={best_n}) → Final: ${final_optimized:,.2f} | Profit: ${profit_optimized:,.2f} ({profit_optimized/initial_capital*100:.2f}%)")
+print(f"\nDefault (n={default_n}) Final: ${final_default:,.2f} Profit: ${profit_default:,.2f} ({profit_default/initial_capital*100:.2f}%)")
+print(f"Optimized (n={best_n}) Final: ${final_optimized:,.2f} Profit: ${profit_optimized:,.2f} ({profit_optimized/initial_capital*100:.2f}%)")
