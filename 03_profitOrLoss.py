@@ -108,7 +108,7 @@ ax1.scatter(
 )
 
 ax1.plot(data.index, data["Typical_Price"], label="Typical Price", color="blue", alpha=0.7)
-ax1.set_title("Momentum Strategy)")
+ax1.set_title("Momentum Strategy")
 ax1.set_ylabel("Typical Price")
 ax1.legend()
 ax1.grid(True)
