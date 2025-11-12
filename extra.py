@@ -3,9 +3,31 @@
 # Create a second plot showing how the portfolio value (1 share) changes over time when following those signals.
 # Optimization to find which SMA periods (e.g. short vs. long) give the best performance.
 
+# Close, SMAs and Signals
+# -----------------------------------
+
 import pandas as pd
-import yfinance as yf
 import matplotlib.pyplot as plt
+import numpy as np
+import yfinance as yf
+
+
+def count_sma(data, w1, w2):
+  data["SMA1"] = data["Close"].rolling(window=w1).mean()
+  data["SMA2"] = data["Close"].rolling(window=w2).mean()
+  return data
+
+def count_signals(data):
+  data["Signal"] = 0
+  data.loc[data["SMA1"] > data["SMA2"], "Signal"] = 1
+  data.loc[data["SMA1"] < data["SMA2"], "Signal"] = -1
+  return data
+
+def count_profit(data):
+  data["Daily_change"] = data["Close"].diff() * data["Signal"].shift(1)
+  data["All_profit"] = data["Daily_change"].cumsum()
+  return data
+
 
 ticker = "AAPL"
 start = "2015-01-01"
@@ -13,157 +35,154 @@ end = "2025-01-01"
 w1 = 30
 w2 = 200
 
-
 data = yf.download(ticker, start=start, end=end, interval="1d", auto_adjust=True)
 data.columns = (col[0] for col in data.columns)
 
-data["SMA30"] = data["Close"].rolling(window=w1).mean()
-data["SMA200"] = data["Close"].rolling(window=w2).mean()
+data = count_sma(data, w1, w2)
+data = count_signals(data)
 
-plt.figure(figsize=(16, 6))
+plt.figure(figsize=(18,7))
 plt.plot(data.index, data["Close"], label="Price", color="blue")
-plt.plot(data.index, data["SMA30"], label="SMA30", color="orange")
-plt.plot(data.index, data["SMA200"], label="SMA200", color="yellow")
+plt.plot(data.index, data["SMA1"], label=f"SMA{w1}", color="orange")
+plt.plot(data.index, data["SMA2"], label=f"SMA{w2}", color="yellow")
 
-data["Signal"] = 0
-data.loc[data["SMA30"] > data["SMA200"], "Signal"] = 1
-data.loc[data["SMA30"] < data["SMA200"], "Signal"] = -1
-
-plt.scatter (
+plt.scatter(
     data.index[data["Signal"].diff() == 2],
     data["Close"][data["Signal"].diff() == 2],
-    label = "Buy signal",
-    marker = "^",
-    color = "green"
+    label="Buy",
+    marker="^",
+    color="green"
 )
 
-plt.scatter (
+plt.scatter(
     data.index[data["Signal"].diff() == -2],
     data["Close"][data["Signal"].diff() == -2],
-    label = "Sell signal",
-    marker = "v",
-    color = "red"
+    label="Sell",
+    marker="v",
+    color="red"
 )
-
-
-plt.title("Price and Averages")
+plt.title("Price, SMAs and Buy/Sell Signals")
 plt.xlabel("Date")
 plt.ylabel("Price")
 plt.legend()
+plt.grid(True)
 plt.tight_layout()
 plt.show()
 
-# --------------------------------
+# Profit graph
+# -----------------------------------
 
-data["Daily_return"] = data["Close"].pct_change()
-data["Return"] = data["Daily_return"] * data["Signal"].shift(1)
-data["All_profit"] = data["Return"].cumsum()
+data = count_profit(data)
 
-plt.figure(figsize=(16, 6))
-plt.plot(data.index, data["All_profit"], label="Profit (1 Share)", color="green")
-plt.title("Profit (%)")
+plt.figure(figsize=(18,7))
+plt.plot(data.index, data["All_profit"], label="Profit", color="green")
+plt.title("Profit")
 plt.xlabel("Date")
-plt.ylabel("Cumulative Profit (%)")
+plt.ylabel("Price")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
 plt.show()
 
-# --------------------------------
 
-data["Daily_change"] = data["Close"].diff()
-data["Profit"] = data["Daily_change"] * data["Signal"].shift(1)
-data["All_profit"] = data["Profit"].cumsum() 
+# With optimized profit 
+# -----------------------------------
 
-plt.figure(figsize=(16, 6))
-plt.plot(data.index, data["All_profit"], label="Profit (1 Share)", color="green")
-plt.title("Profit (dolars)")
-plt.xlabel("Date")
-plt.ylabel("Cumulative Profit (dolars)")
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
-
-# --------------------------------
-
-# Optimization
-best_profit = -999999
 best_w1 = 0
 best_w2 = 0
-results = []
+best_profit = -99999
 
-for w1 in range(10, 101, 10):
-    for w2 in range(100, 251, 25):
-        if w1 >= w2:
-            continue
+for w1 in range (10, 101, 10):
+  for w2 in range (100, 251, 25):
 
-        df = data.copy()
-        df["SMA_short"] = df["Close"].rolling(window=w1).mean()
-        df["SMA_long"] = df["Close"].rolling(window=w2).mean()
+    df = data.copy()
+    df = count_sma(df, w1, w2)
+    df = count_signals(df)
+    df = count_profit(df)
 
-        df["Signal"] = 0
-        df.loc[df["SMA_short"] > df["SMA_long"], "Signal"] = 1
-        df.loc[df["SMA_short"] < df["SMA_long"], "Signal"] = -1
+    final_profit = df["All_profit"].iloc[-1]
 
-        df["Daily_change"] = df["Close"].diff()
-        df["Profit"] = df["Daily_change"] * df["Signal"].shift(1)
-        df["Cumulative_Profit"] = df["Profit"].cumsum()
-
-        final_profit = df["Cumulative_Profit"].iloc[-1]
-        results.append((w1, w2, final_profit))
-
-        if final_profit > best_profit:
-            best_profit = final_profit
-            best_w1 = w1
-            best_w2 = w2
+    if final_profit > best_profit:
+      best_profit = final_profit
+      best_w1 = w1
+      best_w2 = w2
 
 
-print("Optimization results ($):")
-for w1, w2, profit in results:
-    print(f"SMA({w1}, {w2}) - Profit: ${profit}")
+data = count_profit(data)
 
-print(f"\nBest combination: SMA({best_w1}, {best_w2}) - Profit: ${best_profit}")
+data_op = data.copy()
+data_op = count_sma(data_op, best_w1, best_w2)
+data_op = count_signals(data_op)
+data_op = count_profit(data_op)
 
-# Default
-df_default = data.copy()
-df_default["SMA_short"] = df_default["Close"].rolling(window=w1).mean()
-df_default["SMA_long"] = df_default["Close"].rolling(window=w2).mean()
-
-df_default["Signal"] = 0
-df_default.loc[df_default["SMA_short"] > df_default["SMA_long"], "Signal"] = 1
-df_default.loc[df_default["SMA_short"] < df_default["SMA_long"], "Signal"] = -1
-
-df_default["Daily_change"] = df_default["Close"].diff()
-df_default["Profit"] = df_default["Daily_change"] * df_default["Signal"].shift(1)
-df_default["Profit"] = df_default["Profit"].cumsum()
-
-# Optimized
-df_best = data.copy()
-df_best["SMA_short"] = df_best["Close"].rolling(window=best_w1).mean()
-df_best["SMA_long"] = df_best["Close"].rolling(window=best_w2).mean()
-
-df_best["Signal"] = 0
-df_best.loc[df_best["SMA_short"] > df_best["SMA_long"], "Signal"] = 1
-df_best.loc[df_best["SMA_short"] < df_best["SMA_long"], "Signal"] = -1
-
-df_best["Daily_change"] = df_best["Close"].diff()
-df_best["Profit"] = df_best["Daily_change"] * df_best["Signal"].shift(1)
-df_best["Profit"] = df_best["Profit"].cumsum()
-
-
-plt.figure(figsize=(16, 6))
-plt.plot(df_default.index, df_default["Profit"], label=f"Default SMA({w1}, {w2})", color="orange")
-plt.plot(df_best.index, df_best["Profit"], label=f"Optimized SMA({best_w1}, {best_w2})", color="green")
-plt.title("Profit Over Time")
+plt.figure(figsize=(18,7))
+plt.plot(data.index, data["All_profit"], label="Profit", color="green")
+plt.plot(data_op.index, data_op["All_profit"], label="Profit Optimized", color="orange")
+plt.title("Profits")
 plt.xlabel("Date")
-plt.ylabel("Profit ($)")
+plt.ylabel("Price")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
 plt.show()
 
 
+# TP/SL
+# -----------------------------------
 
+take_profit_pct = 0.05
+stop_loss_pct = 0.03
+
+data["Reason"] = ""
+holding = False
+entry_price = 0
+
+for i in range(1, len(data)):
+    price = data["Close"].iloc[i]
+    signal_now = data["Signal"].iloc[i]
+    signal_prev = data["Signal"].iloc[i - 1]
+
+    if signal_now == 1 and signal_prev <= 0 and not holding:
+        holding = True
+        entry_price = price
+
+    elif holding:
+        change = (price - entry_price) / entry_price
+        if change >= take_profit_pct:
+            holding = False
+            data.loc[data.index[i], "Reason"] = "Take"
+
+        elif change <= -stop_loss_pct:
+            holding = False
+            data.loc[data.index[i], "Reason"] = "Stop"
+
+plt.figure(figsize=(18, 7))
+plt.plot(data.index, data["Close"], label="Close Price", color="blue")
+
+plt.scatter(
+    data.index[data["Reason"] == "Take"],
+    data["Close"].loc[data["Reason"] == "Take"],
+    label="Take Profit",
+    color="lime",
+    marker="*",
+    s=150
+)
+
+plt.scatter(
+    data.index[data["Reason"] == "Stop"],
+    data["Close"].loc[data["Reason"] == "Stop"],
+    label="Stop Loss",
+    color="orange",
+    marker="x",
+    s=100
+)
+
+plt.title("Close Price with Take Profit and Stop Loss Markers")
+plt.xlabel("Date")
+plt.ylabel("Price")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
 
 

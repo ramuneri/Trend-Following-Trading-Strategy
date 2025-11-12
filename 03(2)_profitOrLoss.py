@@ -25,7 +25,7 @@ commission = 0.001
 
 data["Reason"] = ""
 profit_values = []
-position = 0
+hold = False
 entry_price = 0
 cumulative_profit = 0
 
@@ -34,27 +34,27 @@ for i in range(1, len(data)):
     signal_now = data["Signal"].iloc[i]
     signal_prev = data["Signal"].iloc[i - 1]
 
-    if signal_now == 1 and signal_prev <= 0 and position == 0:
-        position = 1
+    if signal_now == 1 and signal_prev <= 0 and not hold:
+        hold = True
         entry_price = price
         data.loc[data.index[i], "Reason"] = "Buy"
 
-    elif signal_now == -1 and signal_prev >= 0 and position == 1:
+    elif signal_now == -1 and signal_prev >= 0 and hold:
         cumulative_profit += (price - entry_price) * (1 - commission)
-        position = 0
+        hold = False
         entry_price = 0
         data.loc[data.index[i], "Reason"] = "Sell"
 
-    elif position == 1:
+    elif hold:
         change = (price - entry_price) / entry_price
         if change >= take_profit_pct:
             cumulative_profit += (price - entry_price) * (1 - commission)
-            position = 0
+            hold = False
             entry_price = 0
             data.loc[data.index[i], "Reason"] = "Take Profit"
         elif change <= -stop_loss_pct:
             cumulative_profit += (price - entry_price) * (1 - commission)
-            position = 0
+            hold = False
             entry_price = 0
             data.loc[data.index[i], "Reason"] = "Stop Loss"
 
