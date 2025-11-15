@@ -47,12 +47,17 @@ How good your strategy’s returns are compared to its risk.
 Deviation (specifically standard deviation) means how much something moves away from its average.
 
 How the code works:
+
 - Calculates average daily return
 - Divides by daily volatility
 - Converts to annual scale
 
-### Notes:
+### Extra:
 
 Extra - mini strategija.
 Prasukti ciklą, prabėgti per duomenis, padaryti paprastą indikatorių.
 1 slenkančio vidurkio pvz. - kai kaina aukštesnė už tą slenkantį vidurkį - nusiperki, jei žemesnė - parduodi.
+
+### Notes:
+
+When the buy or sell signal appears, I enter the trade at a middle price between yesterday’s close and today’s close, because the signal is generated only after the entire daily candle is completed, and the exact intraday price of the signal is unknown.
