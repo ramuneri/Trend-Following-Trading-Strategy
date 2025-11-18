@@ -80,16 +80,11 @@ ax1.set_ylabel("Price")
 ax1.legend()
 ax1.grid(True)
 
-ax2.plot(df_default.index, df_default["All_profit"],
-         label=f"Default n={default_n} (Sharpe {sharpe_ratio(df_default['All_profit']):.3f})",
-         color="orange")
-
-ax2.plot(df_best.index, df_best["All_profit"],
-         label=f"Best n={best_n} (Sharpe {best_sharpe:.3f})",
-         color="green")
+ax2.plot(df_default.index, df_default["All_profit"], label=f"Default n={default_n} (Sharpe {sharpe_ratio(df_default['All_profit']):.3f})", color="orange")
+ax2.plot(df_best.index, df_best["All_profit"], label=f"Best n={best_n} (Sharpe {best_sharpe:.3f})", color="green")
 
 ax2.axhline(0, color="black", linewidth=1)
-ax2.set_ylabel("Profit ($)")
+ax2.set_ylabel("Profit")
 ax2.set_xlabel("Date")
 ax2.legend()
 ax2.grid(True)

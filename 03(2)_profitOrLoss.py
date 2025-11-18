@@ -155,8 +155,8 @@ ax2.legend()
 plt.tight_layout()
 plt.show()
 
-
 # ===========================================================
+
 plt.figure(figsize=(16, 6))
 plt.plot(data.index, data["Profit"], color="green", label="Profit per share")
 plt.title("Profit of 1 share (only on signals)")
@@ -170,37 +170,22 @@ plt.show()
 
 print(f"\nFINAL PROFIT: ${data['Profit'].iloc[-1]:,.2f}")
 
+# ===========================================================
 
 data["Trade_cost"] = 0.0
 data.loc[data["Signal"].diff() != 0, "Trade_cost"] = data["Close"] * commission
 
+data["Daily_change"] = data["Close"].diff().fillna(0)
+data["Daily_profit"] = (data["Daily_change"] * data["Signal"].shift(1).fillna(0)) - data["Trade_cost"]
+data["All_profit"] = data["Daily_profit"].cumsum()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ===========================================================
-
-# data["Daily_change"] = data["Close"].diff().fillna(0)
-# data["Daily_profit"] = (data["Daily_change"] * data["Signal"].shift(1).fillna(0)) - data["Trade_cost"]
-# data["All_profit"] = data["Daily_profit"].cumsum()
-
-# plt.figure(figsize=(16, 6))
-# plt.plot(data.index, data["Profit"], color="green", label="Profit per share")
-# plt.title("Profit of 1 share (all)")
-# plt.xlabel("Date")
-# plt.ylabel("Profit")
-# plt.axhline(0, color="black", linewidth=1)
-# plt.grid(True)
-# plt.legend()
-# plt.tight_layout()
-# plt.show()
+plt.figure(figsize=(16, 6))
+plt.plot(data.index, data["All_profit"], color="green", label="Profit per share")
+plt.title("Profit of 1 share (all)")
+plt.xlabel("Date")
+plt.ylabel("Profit")
+plt.axhline(0, color="black", linewidth=1)
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
