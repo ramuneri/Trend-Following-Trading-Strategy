@@ -60,4 +60,5 @@ Prasukti ciklą, prabėgti per duomenis, padaryti paprastą indikatorių.
 
 ### Notes:
 
-When the buy or sell signal appears, I enter the trade at a middle price between yesterday’s close and today’s close, because the signal is generated only after the entire daily candle is completed, and the exact intraday price of the signal is unknown.
+Mes žiūrint ir į šios dienos high, low. 
+Jei high/low trigerino TP/SL, vadinasi buvo išeita su tom TP/SL kainom.

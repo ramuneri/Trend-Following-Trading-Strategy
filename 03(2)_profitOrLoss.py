@@ -8,114 +8,147 @@ data = data.set_index("Date")
 cols = ["Open", "High", "Low", "Close", "Volume"]
 data[cols] = data[cols].apply(pd.to_numeric, errors="coerce")
 
-
-
 n = 50
 take_profit_pct = 0.05
-stop_loss_pct   = 0.03
-commission      = 0.001
-holding         = False
-entry_price     = 0
-
-data["Reason"] = ""
-profits = []
-
+stop_loss_pct = 0.03
+commission = 0.001
 
 data["Momentum"] = data["Close"] - data["Close"].shift(n)
-
 data["Signal"] = 0
 data.loc[data["Momentum"] > 0, "Signal"] = 1
 data.loc[data["Momentum"] < 0, "Signal"] = -1
 
-cumulative_profit = 0
-
+holding = False
+entry_price = 0.0
+trades = []
 
 for i in range(1, len(data)):
-    prev_close = data["Close"].iloc[i - 1]
-    curr_close = data["Close"].iloc[i]
-    high = data["High"].iloc[i]
-    low = data["Low"].iloc[i]
+    idx = data.index[i]
+    close = data["Close"].iloc[i]
+    high  = data["High"].iloc[i]
+    low   = data["Low"].iloc[i]
 
-    signal_now = data["Signal"].iloc[i]
-    signal_prev = data["Signal"].iloc[i - 1]
+    sig_now  = data["Signal"].iloc[i]
+    sig_prev = data["Signal"].iloc[i - 1]
 
-    if signal_now == 1 and signal_prev <= 0 and not holding:
-        entry_price = (prev_close + curr_close) / 2
-        entry_price *= (1 + commission)
+    if not holding:
+        if sig_prev <= 0 and sig_now == 1:
+            holding = True
+            entry_price = close * (1 + commission)
+            trades.append({
+                "buy_date": idx,
+                "buy_price": entry_price,
+                "sell_date": None,
+                "sell_price": None,
+                "reason": None
+            })
+        continue
 
-        holding = True
-        data.loc[data.index[i], "Reason"] = "Buy"
 
-    elif signal_now == -1 and signal_prev >= 0 and holding:
+    tp_level = entry_price * (1 + take_profit_pct)
+    sl_level = entry_price * (1 - stop_loss_pct)
 
-        exit_price = (prev_close + curr_close) / 2
-        exit_price *= (1 - commission)
+    exit_now = False
+    exit_price = None
+    reason = None
 
-        cumulative_profit += (exit_price - entry_price)
+    if low <= sl_level:
+        exit_price = sl_level * (1 - commission)
+        reason = "Stop Loss"
+        exit_now = True
+
+    elif high >= tp_level:
+        exit_price = tp_level * (1 - commission)
+        reason = "Take Profit"
+        exit_now = True
+
+    elif sig_prev >= 0 and sig_now == -1:
+        exit_price = close * (1 - commission)
+        reason = "Sell"
+        exit_now = True
+
+    if exit_now:
         holding = False
-        entry_price = 0
+        trades[-1]["sell_date"] = idx
+        trades[-1]["sell_price"] = exit_price
+        trades[-1]["reason"] = reason
 
-        data.loc[data.index[i], "Reason"] = "Sell"
 
-    elif holding:
 
-        tp_price = entry_price * (1 + take_profit_pct)
-        sl_price = entry_price * (1 - stop_loss_pct)
+pnl_series = pd.Series(0.0, index=data.index)
 
-        if high >= tp_price:
-            exit_price = tp_price * (1 - commission)
-            cumulative_profit += (exit_price - entry_price)
-            holding = False
-            entry_price = 0
-            data.loc[data.index[i], "Reason"] = "Take Profit"
+for t in trades:
+    if t["sell_date"] is not None:
+        profit = t["sell_price"] - t["buy_price"]
+        pnl_series.loc[t["sell_date"]] = profit
 
-        elif low <= sl_price:
-            exit_price = sl_price * (1 - commission)
-            cumulative_profit += (exit_price - entry_price)
-            holding = False
-            entry_price = 0
-            data.loc[data.index[i], "Reason"] = "Stop Loss"
-
-    profits.append(cumulative_profit)
-
-data = data.iloc[1:]
-data["Profit"] = profits
-
+data["Profit"] = pnl_series.cumsum()
 
 
 fig, (ax1, ax2) = plt.subplots(
-    2, 1, figsize=(18, 8), sharex=True,
+    2, 1, 
+    figsize=(17, 6), 
+    sharex=True,
     gridspec_kw={'height_ratios': [3, 1]}
 )
 
 ax1.plot(data.index, data["Close"], label="Close Price", color="blue")
 
-ax1.scatter(data.index[data["Reason"] == "Buy"],
-            data["Close"].loc[data["Reason"] == "Buy"],
-            marker="^", color="green", s=120, label="Buy")
 
-ax1.scatter(data.index[data["Reason"] == "Sell"],
-            data["Close"].loc[data["Reason"] == "Sell"],
-            marker="v", color="red", s=120, label="Sell")
+buy_dates  = [t["buy_date"]  for t in trades]
+buy_prices = [t["buy_price"] for t in trades]
 
-ax1.scatter(data.index[data["Reason"] == "Take Profit"],
-            data["Close"].loc[data["Reason"] == "Take Profit"],
-            marker="*", color="lime", s=160, label="Take Profit")
+ax1.scatter(
+    buy_dates,
+    buy_prices,
+    color="green",
+    marker="^",
+    label="Buy"
+)
+sell_dates  = [t["sell_date"]  for t in trades if t["reason"] == "Sell"]
+sell_prices = [t["sell_price"] for t in trades if t["reason"] == "Sell"]
 
-ax1.scatter(data.index[data["Reason"] == "Stop Loss"],
-            data["Close"].loc[data["Reason"] == "Stop Loss"],
-            marker="x", color="orange", s=100, label="Stop Loss")
+ax1.scatter(
+    sell_dates,
+    sell_prices,
+    color="red",
+    marker="v",
+    label="Sell"
+)
 
-ax1.set_title("Momentum Strategy with Realistic Execution (Crossing Logic)")
+tp_dates  = [t["sell_date"]  for t in trades if t["reason"] == "Take Profit"]
+tp_prices = [t["sell_price"] for t in trades if t["reason"] == "Take Profit"]
+
+ax1.scatter(
+    tp_dates,
+    tp_prices,
+    color="lime",
+    marker="*",
+    label="Take Profit"
+)
+
+sl_dates  = [t["sell_date"]  for t in trades if t["reason"] == "Stop Loss"]
+sl_prices = [t["sell_price"] for t in trades if t["reason"] == "Stop Loss"]
+
+ax1.scatter(
+    sl_dates,
+    sl_prices,
+    color="red",
+    marker="x",
+    label="Stop Loss"
+)
+
+
+ax1.set_title("Momentum Strategy")
 ax1.set_ylabel("Price")
 ax1.grid(True)
 ax1.legend()
 
-
 ax2.plot(data.index, data["Momentum"], color="purple", label=f"Momentum ({n})")
 ax2.axhline(0, color="black", linestyle="--")
-ax2.set_ylabel("Momentum")
+ax2.set_title("Momentum Indicator")
 ax2.set_xlabel("Date")
+ax2.set_ylabel("Momentum")
 ax2.grid(True)
 ax2.legend()
 
@@ -123,21 +156,51 @@ plt.tight_layout()
 plt.show()
 
 
-
-diff_signal = data["Signal"].diff().fillna(0)
-data["Trade_cost"] = 0.0
-data.loc[diff_signal != 0, "Trade_cost"] = data["Close"] * commission
-
-data["Daily_profit"] = data["Close"].diff().fillna(0) * data["Signal"].shift(1).fillna(0) - data["Trade_cost"]
-data["All_profit"] = data["Daily_profit"].cumsum()
-
+# ===========================================================
 plt.figure(figsize=(16, 6))
-plt.plot(data.index, data["All_profit"], color="green")
-plt.title("Profit (1 Share)")
+plt.plot(data.index, data["Profit"], color="green", label="Profit per share")
+plt.title("Profit of 1 share (only on signals)")
 plt.xlabel("Date")
-plt.ylabel("Profit ($)")
+plt.ylabel("Profit")
+plt.axhline(0, color="black", linewidth=1)
 plt.grid(True)
+plt.legend()
 plt.tight_layout()
 plt.show()
 
-print(f"\nFINAL PROFIT PER SHARE: ${data['All_profit'].iloc[-1]:,.2f}")
+print(f"\nFINAL PROFIT: ${data['Profit'].iloc[-1]:,.2f}")
+
+
+data["Trade_cost"] = 0.0
+data.loc[data["Signal"].diff() != 0, "Trade_cost"] = data["Close"] * commission
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ===========================================================
+
+# data["Daily_change"] = data["Close"].diff().fillna(0)
+# data["Daily_profit"] = (data["Daily_change"] * data["Signal"].shift(1).fillna(0)) - data["Trade_cost"]
+# data["All_profit"] = data["Daily_profit"].cumsum()
+
+# plt.figure(figsize=(16, 6))
+# plt.plot(data.index, data["Profit"], color="green", label="Profit per share")
+# plt.title("Profit of 1 share (all)")
+# plt.xlabel("Date")
+# plt.ylabel("Profit")
+# plt.axhline(0, color="black", linewidth=1)
+# plt.grid(True)
+# plt.legend()
+# plt.tight_layout()
+# plt.show()
