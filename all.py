@@ -2,16 +2,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-data = pd.read_csv("AAPL.csv")
-data["Date"] = pd.to_datetime(data["Date"])
-data = data.set_index("Date")
-
-cols = ["Open", "High", "Low", "Close", "Volume"]
-data[cols] = data[cols].apply(pd.to_numeric, errors="coerce")
-
-data["Typical_Price"] = (data["High"] + data["Low"] + data["Close"]) / 3
-
-
 def run_strategy(data, n, take_profit_pct, stop_loss_pct, commission, initial_capital):
     df = data.copy()
     df["Momentum"] = df["Typical_Price"] - df["Typical_Price"].shift(n)
@@ -66,6 +56,16 @@ def sharpe(portfolio_values):
     if returns.std() == 0:
         return 0
     return (returns.mean() / returns.std()) * np.sqrt(252)
+
+
+data = pd.read_csv("AAPL.csv")
+data["Date"] = pd.to_datetime(data["Date"])
+data = data.set_index("Date")
+
+cols = ["Open", "High", "Low", "Close", "Volume"]
+data[cols] = data[cols].apply(pd.to_numeric, errors="coerce")
+
+data["Typical_Price"] = (data["High"] + data["Low"] + data["Close"]) / 3
 
 
 initial_capital = 10_000

@@ -61,9 +61,7 @@ plt.grid(True)
 plt.tight_layout()
 plt.show()
 
-# ===============================
-# Position chart (long / short / flat)
-# ===============================
+
 plt.figure(figsize=(18,3))
 plt.plot(data.index, data["Signal"], color="purple", label="Position (1=Long, -1=Short, 0=Flat)")
 plt.title("Trading Positions Over Time")
@@ -88,9 +86,6 @@ plt.grid(True)
 plt.tight_layout()
 plt.show()
 
-# ===============================
-# Optimization (bonus)
-# ===============================
 best_w1 = 0
 best_w2 = 0
 best_profit = -99999

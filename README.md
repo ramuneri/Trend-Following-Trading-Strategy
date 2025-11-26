@@ -58,7 +58,7 @@ Extra - mini strategija.
 Prasukti ciklą, prabėgti per duomenis, padaryti paprastą indikatorių.
 1 slenkančio vidurkio pvz. - kai kaina aukštesnė už tą slenkantį vidurkį - nusiperki, jei žemesnė - parduodi.
 
-### Notes:
+### Notes / needed fixing:
 
 Mes žiūrint ir į šios dienos high, low. 
 Jei high/low trigerino TP/SL, vadinasi buvo išeita su tom TP/SL kainom.
