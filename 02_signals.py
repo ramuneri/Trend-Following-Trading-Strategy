@@ -17,7 +17,6 @@ data["Signal"] = 0
 data.loc[data["Momentum"] > 0, "Signal"] = 1
 data.loc[data["Momentum"] < 0, "Signal"] = -1
 
-
 fig, (ax1, ax2) = plt.subplots(
     2, 1,
     figsize=(18, 6),
